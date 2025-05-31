@@ -1,3 +1,4 @@
+// src/main/java/com/example/Shareple/domain/User.java
 package com.example.Shareple.domain;
 
 import jakarta.persistence.*;
@@ -8,13 +9,28 @@ import lombok.*;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@Table(name = "users")
 public class User {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    private String kakaoId; // 카카오 로그인에서 가져온 고유 ID
+    @Column(nullable = false, unique = true)
+    private String kakaoId;
+
+    @Column(nullable = false)
+    private String nickname;
+
+    @Column(nullable = false, unique = true)
+    private String email;
+
+    @Column(length = 500)
+    private String profileImageUrl;
 
     private String name;
     private String phone;
+
+    @Column(length = 500)
+    private String address;
 }
