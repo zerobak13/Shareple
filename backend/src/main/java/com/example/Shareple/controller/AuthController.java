@@ -1,8 +1,8 @@
-// src/main/java/com/example/Shareple/controller/AuthController.java
 package com.example.Shareple.controller;
 
 import com.example.Shareple.dto.UserResponseDto;
 import com.example.Shareple.service.UserService;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.core.user.OAuth2User;
@@ -46,7 +46,8 @@ public class AuthController {
     }
 
     @PostMapping("/logout")
-    public ResponseEntity<Void> logout() {
+    public ResponseEntity<Void> logout(HttpServletRequest request) {
+        request.getSession().invalidate(); //  세션 무효화
         return ResponseEntity.noContent().build();
     }
 }

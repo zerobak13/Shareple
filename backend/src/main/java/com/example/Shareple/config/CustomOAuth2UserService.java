@@ -43,7 +43,7 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
         userService.processOAuthPostLogin(
                 kakaoId,
                 kakaoNickname != null ? kakaoNickname : "",
-                email != null ? email : "",
+                "",
                 profileImageUrl != null ? profileImageUrl : ""
         );
 
