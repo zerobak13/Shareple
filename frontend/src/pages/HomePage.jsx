@@ -39,6 +39,25 @@ const HomePage = ({ user }) => {
                 </ul>
             </div>
 
+
+
+            {user.profileImageUrl && (
+                <div style={{ marginTop: '1rem' }}>
+                    <img
+                        src={user.profileImageUrl}
+                        alt="프로필 이미지"
+                        style={{
+                            width: '120px',
+                            height: '120px',
+                            borderRadius: '50%',
+                            objectFit: 'cover',
+                            border: '2px solid #ccc'
+                        }}
+                    />
+                </div>
+            )}
+
+
             <button
                 onClick={handleLogout}
                 style={{
