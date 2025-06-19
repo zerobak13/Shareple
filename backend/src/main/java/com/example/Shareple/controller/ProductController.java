@@ -7,6 +7,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.security.oauth2.core.user.OAuth2User;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 
 import java.io.File;
 import java.io.IOException;
@@ -15,6 +17,8 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.UUID;
+import com.example.Shareple.entity.Product;
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/products")
@@ -26,13 +30,14 @@ public class ProductController {
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public String registerProduct(
             @ModelAttribute ProductRequestDto dto,
-            @RequestPart(value = "image", required = false) MultipartFile imageFile
+            @RequestPart(value = "image", required = false) MultipartFile imageFile,
+            @AuthenticationPrincipal OAuth2User user // ✅ 사용자 정보 받기
     ) {
         String imageUrl = null;
 
         if (imageFile != null && !imageFile.isEmpty()) {
             try {
-                String uploadDir = "uploads/"; // 상대경로 또는 절대경로 사용 가능
+                String uploadDir = "uploads/";
                 File dir = new File(uploadDir);
                 if (!dir.exists()) dir.mkdirs();
 
@@ -40,14 +45,15 @@ public class ProductController {
                 Path filePath = Paths.get(uploadDir + fileName);
                 Files.copy(imageFile.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
 
-                imageUrl = "/static/" + fileName; // 이 경로로 접근하도록 프론트와 약속
+                imageUrl = "/uploads/" + fileName;
             } catch (IOException e) {
                 e.printStackTrace();
                 return "이미지 업로드 실패";
             }
         }
 
-        // Product Entity에 매핑해서 저장
+        String kakaoId = user.getAttribute("id").toString(); // ✅ 카카오 ID 추출
+
         Product product = new Product();
         product.setName(dto.getName());
         product.setPrice(dto.getPrice());
@@ -57,10 +63,21 @@ public class ProductController {
         product.setDeadline(dto.getDeadline());
         product.setMethod(dto.getMethod());
         product.setLocation(dto.getLocation());
-        product.setImageUrl(imageUrl); // 이미지 경로 저장
+        product.setImageUrl(imageUrl);
+        product.setKakaoId(kakaoId); // ✅ 카카오 ID 저장
 
         productService.saveProduct(product);
 
         return "물품 등록 성공";
     }
+
+
+    @GetMapping("/my")
+    public List<Product> getMyProducts(@AuthenticationPrincipal OAuth2User user) {
+        String kakaoId = user.getAttribute("id").toString();
+        return productService.findProductsByKakaoId(kakaoId);
+    }
+
+
+
 }
