@@ -1,11 +1,39 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
+import axios from '../api/axiosInstance';
 
-const MainPage = ({ user }) => {
+const MainPage = () => {
+    const [products, setProducts] = useState([]);
+
+    useEffect(() => {
+        const fetchMyProducts = async () => {
+            try {
+                const response = await axios.get('/api/products/my');
+                setProducts(response.data);
+            } catch (err) {
+                console.error('상품 목록 불러오기 실패:', err);
+            }
+        };
+        fetchMyProducts();
+    }, []);
+
     return (
-        <div style={{ textAlign: 'center', marginTop: '3rem' }}>
-            <h2>📌 Shareple 메인 페이지</h2>
-            <p>안녕하세요, <strong>{user.name || user.nickname}</strong>님! 🎉</p>
-            <p>이곳은 로그인한 사용자만 볼 수 있는 메인 페이지입니다.</p>
+        <div>
+            <h2>내가 등록한 물품</h2>
+            {products.length === 0 ? (
+                <p>등록된 물품이 없습니다.</p>
+            ) : (
+                <ul>
+                    {products.map((product) => (
+                        <li key={product.id}>
+                            <img src={product.imageUrl} alt="제품" width="100" />
+                            <p>{product.name}</p>
+                            <p>{product.price}원 / 보증금 {product.deposit}원</p>
+                            <p>{product.description}</p>
+                            {/* 나중에 수정/삭제 버튼도 여기에 추가 */}
+                        </li>
+                    ))}
+                </ul>
+            )}
         </div>
     );
 };

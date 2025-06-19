@@ -1,5 +1,3 @@
-// src/App.js
-import CompleteProfilePage from './pages/CompleteProfilePage';
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import {
@@ -12,25 +10,25 @@ import {
 import HomePage from './pages/HomePage';
 import LoginPage from './pages/LoginPage';
 import MainPage from './pages/MainPage';
+import CompleteProfilePage from './pages/CompleteProfilePage';
+import ProductRegisterPage from './pages/RegisterProductPage';
+import MyProductManagePage from './pages/MyProductManagePage';
+import EditProductPage from './pages/EditProductPage';
+
+import Navbar from './components/Navbar';
 
 function App() {
-    const [user, setUser] = useState(null);       // 로그인된 사용자 정보
-    const [loading, setLoading] = useState(true); // 인증 확인 중 로딩 상태
+    const [user, setUser] = useState(null);
+    const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        // 앱이 처음 켜질 때 백엔드에 “로그인 상태인지” 확인
         axios
             .get('/api/auth/me')
-            .then((res) => {
-                setUser(res.data); // 로그인되어 있으면 유저 정보가 넘어온다.
-            })
+            .then((res) => setUser(res.data))
             .catch((err) => {
-                // 401 Unauthorized가 떨어지면 아직 로그인이 안 된 상태
-                console.log('아직 로그인되지 않음 (401):', err.response?.status);
+                console.log('로그인되지 않음:', err.response?.status);
             })
-            .finally(() => {
-                setLoading(false);
-            });
+            .finally(() => setLoading(false));
     }, []);
 
     if (loading) {
@@ -39,25 +37,9 @@ function App() {
 
     return (
         <BrowserRouter>
-            {/* 간단한 네비게이션 바 */}<nav
-            style={{
-                padding: '1rem 2rem',
-                background: '#f0f0f0',
-                display: 'flex',
-                justifyContent: 'flex-start',
-                gap: '2rem',
-                borderBottom: '1px solid #ccc',
-                marginBottom: '2rem', // ⬅️ 본문과의 간격
-            }}
-        >
-            <a href="/" style={{ textDecoration: 'none', color: '#333' }}>Main</a>
-            <a href="/login" style={{ textDecoration: 'none', color: '#333' }}>Login</a>
-            <a href="/profile" style={{ textDecoration: 'none', color: '#333' }}>Profile</a>
-        </nav>
-
-
+            <Navbar /> {/* ✅ 상단 바 */}
             <Routes>
-                {/* 루트("/") 경로 */}
+                {/* 메인 경로 */}
                 <Route
                     path="/"
                     element={
@@ -73,75 +55,57 @@ function App() {
                     }
                 />
 
-
-                {/* /login 경로 */}
+                {/* 로그인 페이지 */}
                 <Route
                     path="/login"
                     element={
-                        user ? (
-                            <Navigate to="/" replace />
-                        ) : (
-                            <LoginPage />
-                        )
+                        user ? <Navigate to="/" replace /> : <LoginPage />
                     }
                 />
 
+                {/* 추가 정보 입력 페이지 */}
                 <Route
                     path="/complete-profile"
                     element={
-                        user ? (
-                            <CompleteProfilePage user={user} />
-                        ) : (
-                            <Navigate to="/login" replace />
-                        )
+                        user ? <CompleteProfilePage user={user} /> : <Navigate to="/login" replace />
                     }
                 />
 
-                <Route
-                    path="/"
-                    element={
-                        user ? (
-                            !user.email || !user.name || !user.phone || !user.address ? (
-                                <Navigate to="/complete-profile" replace />
-                            ) : (
-                                <MainPage user={user} />
-                            )
-                        ) : (
-                            <Navigate to="/login" replace />
-                        )
-                    }
-                />
-
+                {/* 마이페이지(프로필) */}
                 <Route
                     path="/profile"
                     element={
-                        user ? (
-                            <HomePage user={user} />
-                        ) : (
-                            <Navigate to="/login" replace />
-                        )
+                        user ? <HomePage user={user} /> : <Navigate to="/login" replace />
                     }
                 />
 
+                {/* 메인페이지 직접 접근 */}
                 <Route
                     path="/main"
                     element={
-                        user ? (
-                            <MainPage user={user} />
-                        ) : (
-                            <Navigate to="/login" replace />
-                        )
+                        user ? <MainPage user={user} /> : <Navigate to="/login" replace />
                     }
                 />
 
+                {/* 물품 등록 페이지 */}
+                <Route
+                    path="/product/register"
+                    element={
+                        user ? <ProductRegisterPage user={user} /> : <Navigate to="/login" replace />
+                    }
+                />
+
+                <Route path="/mypage/products" element={<MyProductManagePage />} /> {/* ✅ 필수 */}
+
+                <Route path="/edit/:id" element={<EditProductPage />} />
 
 
-                {/* 그 외 모든 라우트는 404 처리 */}
+                {/* 404 처리 */}
                 <Route
                     path="*"
                     element={
                         <div style={{ textAlign: 'center', marginTop: '3rem' }}>
-                            404 Not Found<br/>
+                            404 Not Found<br />
                             요청하신 페이지를 찾을 수 없습니다.
                         </div>
                     }
