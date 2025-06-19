@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.http.ResponseEntity;
 
 import java.io.File;
 import java.io.IOException;
@@ -78,6 +79,71 @@ public class ProductController {
         return productService.findProductsByKakaoId(kakaoId);
     }
 
+    // 3. 수정
+    @PutMapping("/{id}")
+    public ResponseEntity<String> updateProduct(
+            @PathVariable Long id,
+            @ModelAttribute ProductRequestDto dto,
+            @RequestPart(value = "image", required = false) MultipartFile imageFile,
+            @AuthenticationPrincipal OAuth2User user
+    ) {
+        String kakaoId = user.getAttribute("id").toString();
+        Product product = productService.findById(id);
 
+        if (!product.getKakaoId().equals(kakaoId)) {
+            return ResponseEntity.status(403).body("권한이 없습니다");
+        }
+
+        if (imageFile != null && !imageFile.isEmpty()) {
+            product.setImageUrl(saveImage(imageFile));
+        }
+
+        product.setName(dto.getName());
+        product.setPrice(dto.getPrice());
+        product.setDeposit(dto.getDeposit());
+        product.setDescription(dto.getDescription());
+        product.setCategory(dto.getCategory());
+        product.setDeadline(dto.getDeadline());
+        product.setMethod(dto.getMethod());
+        product.setLocation(dto.getLocation());
+
+        productService.saveProduct(product);
+        return ResponseEntity.ok("수정 완료");
+    }
+
+    // 4. 삭제
+    @DeleteMapping("/{id}")
+    public ResponseEntity<String> deleteProduct(
+            @PathVariable Long id,
+            @AuthenticationPrincipal OAuth2User user
+    ) {
+        String kakaoId = user.getAttribute("id").toString();
+        Product product = productService.findById(id);
+
+        if (!product.getKakaoId().equals(kakaoId)) {
+            return ResponseEntity.status(403).body("권한이 없습니다");
+        }
+
+        productService.deleteProduct(id);
+        return ResponseEntity.ok("삭제 완료");
+    }
+
+    // 이미지 저장 유틸
+    private String saveImage(MultipartFile imageFile) {
+        if (imageFile == null || imageFile.isEmpty()) return null;
+        try {
+            String uploadDir = "uploads/";
+            File dir = new File(uploadDir);
+            if (!dir.exists()) dir.mkdirs();
+
+            String fileName = UUID.randomUUID() + "_" + imageFile.getOriginalFilename();
+            Path filePath = Paths.get(uploadDir + fileName);
+            Files.copy(imageFile.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
+            return "/uploads/" + fileName;
+        } catch (IOException e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
 
 }

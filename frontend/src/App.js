@@ -12,6 +12,8 @@ import LoginPage from './pages/LoginPage';
 import MainPage from './pages/MainPage';
 import CompleteProfilePage from './pages/CompleteProfilePage';
 import ProductRegisterPage from './pages/RegisterProductPage';
+import MyProductManagePage from './pages/MyProductManagePage';
+import EditProductPage from './pages/EditProductPage';
 
 import Navbar from './components/Navbar';
 
@@ -92,6 +94,11 @@ function App() {
                         user ? <ProductRegisterPage user={user} /> : <Navigate to="/login" replace />
                     }
                 />
+
+                <Route path="/mypage/products" element={<MyProductManagePage />} /> {/* ✅ 필수 */}
+
+                <Route path="/edit/:id" element={<EditProductPage />} />
+
 
                 {/* 404 처리 */}
                 <Route

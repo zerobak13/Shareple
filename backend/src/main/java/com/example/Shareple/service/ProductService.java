@@ -20,5 +20,13 @@ public class ProductService {
     public List<Product> findProductsByKakaoId(String kakaoId) {
         return productRepository.findByKakaoId(kakaoId);
     }
+    public Product findById(Long id) {
+        return productRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("물품을 찾을 수 없습니다"));
+    }
+
+    public void deleteProduct(Long id) {
+        productRepository.deleteById(id);
+    }
 
 }
