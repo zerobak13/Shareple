@@ -19,6 +19,8 @@ public class ProductDetailDto {
 
     private final String sellerNickname;
     private final String sellerEmail;
+    private final String sellerKakaoId;
+
 
     public ProductDetailDto(Product product, User user) {
         this.id = product.getId();
@@ -33,5 +35,7 @@ public class ProductDetailDto {
         this.imageUrl = product.getImageUrl();
         this.sellerNickname = user.getNickname();  // ❗ User 클래스 구조에 맞게 수정
         this.sellerEmail = user.getEmail();        // ❗ User 클래스 구조에 맞게 수정
+        this.sellerKakaoId = user.getKakaoId();
+
     }
 }

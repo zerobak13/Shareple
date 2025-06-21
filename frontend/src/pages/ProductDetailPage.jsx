@@ -1,10 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import axios from '../api/axiosInstance';
+import { useNavigate } from 'react-router-dom';
 
 const ProductDetailPage = () => {
     const { id } = useParams();
     const [product, setProduct] = useState(null);
+    const navigate = useNavigate();
 
     useEffect(() => {
         axios.get(`/api/products/${id}`)
@@ -35,8 +37,17 @@ const ProductDetailPage = () => {
 
             <button
                 onClick={() => {
-                    // TODO: 채팅방 생성 및 이동 구현
-                    alert(`"${product.sellerNickname}"님과 채팅방을 시작합니다.`);
+                    axios.post('/api/chat/create', {
+                        receiverKakaoId: product.sellerKakaoId  // 🔸 이 값이 백엔드에 전달됨
+                    })
+                        .then(res => {
+                            const roomId = res.data.id;
+                            navigate(`/chat/${roomId}`);  // 🔸 채팅방 페이지로 이동
+                        })
+                        .catch(err => {
+                            console.error(err);
+                            alert("채팅방 생성에 실패했습니다.");
+                        });
                 }}
                 style={{
                     marginTop: '1rem',
@@ -50,6 +61,7 @@ const ProductDetailPage = () => {
             >
                 채팅하기
             </button>
+
         </div>
     );
 
