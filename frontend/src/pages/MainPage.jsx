@@ -1,39 +1,42 @@
+// MainPage.jsx
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import axios from '../api/axiosInstance';
 
 const MainPage = () => {
     const [products, setProducts] = useState([]);
+    const navigate = useNavigate();
 
     useEffect(() => {
-        const fetchMyProducts = async () => {
-            try {
-                const response = await axios.get('/api/products/my');
-                setProducts(response.data);
-            } catch (err) {
-                console.error('상품 목록 불러오기 실패:', err);
-            }
-        };
-        fetchMyProducts();
+        axios.get('/api/products/all') // 전체 물품 조회 API
+            .then(res => setProducts(res.data))
+            .catch(err => console.error(err));
     }, []);
 
     return (
         <div>
-            <h2>내가 등록한 물품</h2>
-            {products.length === 0 ? (
-                <p>등록된 물품이 없습니다.</p>
-            ) : (
-                <ul>
-                    {products.map((product) => (
-                        <li key={product.id}>
-                            <img src={product.imageUrl} alt="제품" width="100" />
-                            <p>{product.name}</p>
-                            <p>{product.price}원 / 보증금 {product.deposit}원</p>
-                            <p>{product.description}</p>
-                            {/* 나중에 수정/삭제 버튼도 여기에 추가 */}
-                        </li>
-                    ))}
-                </ul>
-            )}
+            <h2>등록된 물품들</h2>
+            <div style={{ display: 'grid', gap: '1rem' }}>
+                {products.map(product => (
+                    <div
+                        key={product.id}
+                        onClick={() => navigate(`/products/${product.id}`)}
+                        style={{
+                            border: '1px solid #ccc',
+                            padding: '1rem',
+                            cursor: 'pointer'
+                        }}
+                    >
+                        <img
+                            src={`http://localhost:8080${product.imageUrl}`}
+                            alt={product.name}
+                            style={{ width: '100px', height: '100px' }}
+                        />
+                        <h4>{product.name}</h4>
+                        <p>{product.price}원</p>
+                    </div>
+                ))}
+            </div>
         </div>
     );
 };

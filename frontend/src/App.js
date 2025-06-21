@@ -14,6 +14,7 @@ import CompleteProfilePage from './pages/CompleteProfilePage';
 import ProductRegisterPage from './pages/RegisterProductPage';
 import MyProductManagePage from './pages/MyProductManagePage';
 import EditProductPage from './pages/EditProductPage';
+import ProductDetailPage from './pages/ProductDetailPage';
 
 import Navbar from './components/Navbar';
 
@@ -98,6 +99,9 @@ function App() {
                 <Route path="/mypage/products" element={<MyProductManagePage />} /> {/* ✅ 필수 */}
 
                 <Route path="/edit/:id" element={<EditProductPage />} />
+
+                <Route path="/" element={<MainPage />} />
+                <Route path="/products/:id" element={<ProductDetailPage />} />
 
 
                 {/* 404 처리 */}

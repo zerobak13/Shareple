@@ -146,4 +146,18 @@ public class ProductController {
         }
     }
 
+    // 모든 사용자의 물품을 최신순으로 조회
+    @GetMapping("/all")
+    public List<Product> getAllProducts() {
+        return productService.findAllProducts();
+    }
+
+    @GetMapping("/{id}")
+    public Product getProductById(@PathVariable Long id) {
+        return productService.findById(id);
+    }
+
+
+
+
 }
