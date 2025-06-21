@@ -29,7 +29,6 @@ const MainPage = () => {
                             <p>{product.name}</p>
                             <p>{product.price}원 / 보증금 {product.deposit}원</p>
                             <p>{product.description}</p>
-                            {/* 나중에 수정/삭제 버튼도 여기에 추가 */}
                         </li>
                     ))}
                 </ul>

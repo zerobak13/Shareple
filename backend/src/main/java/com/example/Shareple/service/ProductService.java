@@ -17,10 +17,11 @@ public class ProductService {
     public Product saveProduct(Product product) {
         return productRepository.save(product);
     }
-    public List<Product> findProductsByKakaoId(String kakaoId) {
-        return productRepository.findByKakaoId(kakaoId);
-    }
-    public Product findById(Long id) {
+public List<Product> findProductsByKakaoId(String kakaoId) {
+    return productRepository.findByKakaoIdOrderByIdDesc(kakaoId);
+}
+
+public Product findById(Long id) {
         return productRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("물품을 찾을 수 없습니다"));
     }

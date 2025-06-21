@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import axios from '../api/axiosInstance';
+import { useNavigate } from 'react-router-dom';
+
 
 const ProductForm = () => {
     const [form, setForm] = useState({
@@ -13,6 +15,7 @@ const ProductForm = () => {
         location: '',
     });
     const [image, setImage] = useState(null);
+    const navigate = useNavigate();
 
     const handleChange = e => {
         setForm({ ...form, [e.target.name]: e.target.value });
@@ -35,6 +38,7 @@ const ProductForm = () => {
                 headers: { 'Content-Type': 'multipart/form-data' },
             });
             alert('등록 성공!');
+            navigate('/main');
         } catch (err) {
             alert('등록 실패');
         }
