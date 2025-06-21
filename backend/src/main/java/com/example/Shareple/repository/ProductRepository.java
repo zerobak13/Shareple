@@ -9,5 +9,5 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
 
     //List<Product> findByKakaoId(String kakaoId);
     List<Product> findByKakaoIdOrderByIdDesc(String kakaoId);
-
+    List<Product> findAllByOrderByIdDesc();
 }

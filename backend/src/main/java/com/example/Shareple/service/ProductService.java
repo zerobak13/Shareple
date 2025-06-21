@@ -20,6 +20,10 @@ public class ProductService {
 public List<Product> findProductsByKakaoId(String kakaoId) {
     return productRepository.findByKakaoIdOrderByIdDesc(kakaoId);
 }
+    public List<Product> findAllProducts() {
+        return productRepository.findAllByOrderByIdDesc();
+    }
+
 
 public Product findById(Long id) {
         return productRepository.findById(id)
