@@ -7,6 +7,6 @@ import lombok.Setter;
 @Setter
 public class ChatMessage {
     private String roomId;
-    private String sender;
+    private String senderKakaoId;;
     private String content;
 }

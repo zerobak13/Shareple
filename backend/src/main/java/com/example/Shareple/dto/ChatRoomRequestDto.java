@@ -5,4 +5,5 @@ import lombok.Getter;
 @Getter
 public class ChatRoomRequestDto {
     private String receiverKakaoId;
+    private Long productId;
 }
