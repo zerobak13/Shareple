@@ -1,39 +1,60 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
+import SockJS from 'sockjs-client';
+import { Client } from '@stomp/stompjs';
 import { useParams } from 'react-router-dom';
 
-const ChatRoom = () => {
-    const { roomId } = useParams();
-    const [message, setMessage] = useState("");
+const ChatRoomPage = () => {
+    const { roomId } = useParams();  // 채팅방 ID
     const [messages, setMessages] = useState([]);
+    const [input, setInput] = useState('');
+    const clientRef = useRef(null);
 
-    const handleSend = () => {
-        if (message.trim() === "") return;
+    useEffect(() => {
+        const socket = new SockJS('http://localhost:8080/ws'); // 백엔드 WebSocket 엔드포인트
+        const client = new Client({
+            webSocketFactory: () => socket,
+            onConnect: () => {
+                client.subscribe(`/topic/chat/${roomId}`, message => {
+                    const body = JSON.parse(message.body);
+                    setMessages(prev => [...prev, body]);
+                });
+            },
+        });
 
-        // 일단은 WebSocket 없이 로컬에 저장 (나중에 서버로 보내기)
-        setMessages([...messages, { text: message, sender: "나" }]);
-        setMessage("");
+        client.activate();
+        clientRef.current = client;
+
+        return () => {
+            client.deactivate();
+        };
+    }, [roomId]);
+
+    const sendMessage = () => {
+        if (clientRef.current && input.trim() !== '') {
+            clientRef.current.publish({
+                destination: `/app/chat/${roomId}`,
+                body: JSON.stringify({ content: input })
+            });
+            setInput('');
+        }
     };
 
     return (
-        <div style={{ padding: "2rem" }}>
-            <h2>채팅방 #{roomId}</h2>
-            <div style={{ border: "1px solid #ccc", height: "300px", padding: "1rem", overflowY: "scroll", marginBottom: "1rem" }}>
+        <div style={{ padding: '2rem' }}>
+            <h2>채팅방 ID: {roomId}</h2>
+            <div style={{ border: '1px solid gray', height: '300px', overflowY: 'scroll', padding: '1rem' }}>
                 {messages.map((msg, idx) => (
-                    <div key={idx}><strong>{msg.sender}:</strong> {msg.text}</div>
+                    <div key={idx}>{msg.content}</div>
                 ))}
             </div>
-            <div style={{ display: "flex" }}>
-                <input
-                    type="text"
-                    value={message}
-                    onChange={e => setMessage(e.target.value)}
-                    placeholder="메시지 입력..."
-                    style={{ flex: 1, padding: "0.5rem" }}
-                />
-                <button onClick={handleSend} style={{ padding: "0.5rem 1rem" }}>보내기</button>
-            </div>
+            <input
+                value={input}
+                onChange={e => setInput(e.target.value)}
+                placeholder="메시지를 입력하세요"
+            />
+            <button onClick={sendMessage}>전송</button>
         </div>
     );
 };
 
-export default ChatRoom;
+export default ChatRoomPage;
