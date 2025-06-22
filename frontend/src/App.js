@@ -15,6 +15,7 @@ import ProductRegisterPage from './pages/RegisterProductPage';
 import MyProductManagePage from './pages/MyProductManagePage';
 import EditProductPage from './pages/EditProductPage';
 import ProductDetailPage from './pages/ProductDetailPage';
+import ChatRoomPage from './pages/ChatRoomPage';
 
 import Navbar from './components/Navbar';
 
@@ -102,7 +103,7 @@ function App() {
 
                 <Route path="/" element={<MainPage />} />
                 <Route path="/products/:id" element={<ProductDetailPage />} />
-
+                <Route path="/chat/:roomId" element={<ChatRoomPage />} />
 
                 {/* 404 처리 */}
                 <Route

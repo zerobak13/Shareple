@@ -20,6 +20,10 @@ import java.nio.file.StandardCopyOption;
 import java.util.UUID;
 import com.example.Shareple.entity.Product;
 import java.util.List;
+import com.example.Shareple.repository.UserRepository;
+import com.example.Shareple.dto.ProductDetailDto;
+import com.example.Shareple.domain.User;
+
 
 @RestController
 @RequestMapping("/api/products")
@@ -27,6 +31,8 @@ import java.util.List;
 public class ProductController {
 
     private final ProductService productService;
+    private final UserRepository userRepository;
+
 
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public String registerProduct(
@@ -153,9 +159,14 @@ public class ProductController {
     }
 
     @GetMapping("/{id}")
-    public Product getProductById(@PathVariable Long id) {
-        return productService.findById(id);
+    public ProductDetailDto getProductDetail(@PathVariable Long id) {
+        Product product = productService.findById(id);
+        User user = userRepository.findByKakaoId(product.getKakaoId())
+                .orElseThrow(() -> new RuntimeException("사용자를 찾을 수 없습니다"));
+
+        return new ProductDetailDto(product, user);
     }
+
 
 
 
