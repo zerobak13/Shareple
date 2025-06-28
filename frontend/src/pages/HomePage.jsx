@@ -84,6 +84,22 @@ const ProfilePage = () => {
             >
                 🧺 물품 관리하기
             </button>
+            <button onClick={() => navigate("/chat-rooms")}
+                style={{
+                marginTop: '1.5rem',
+                padding: '0.6rem 1rem',
+                backgroundColor: '#3498db',
+                color: 'white',
+                border: 'none',
+                borderRadius: '4px',
+                cursor: 'pointer',
+                width: '100%',
+                fontSize: '16px',
+                fontWeight: 'bold'
+            }}
+                    >
+                채팅 목록 보기
+            </button>
         </div>
     );
 };

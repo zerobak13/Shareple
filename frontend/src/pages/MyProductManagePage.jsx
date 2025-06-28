@@ -30,9 +30,7 @@ const MyProductManagePage = () => {
                     <p>가격: {product.price}원, 보증금: {product.deposit}원</p>
                     <button onClick={() => navigate(`/edit/${product.id}`)}>수정</button>
                     <button onClick={() => handleDelete(product.id)}>삭제</button>
-                    <button onClick={() => navigate("/chat-rooms")}>
-                        채팅 목록 보기
-                    </button>
+
                 </div>
             ))}
         </div>
