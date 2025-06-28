@@ -1,6 +1,7 @@
 package com.example.Shareple.controller;
 import com.example.Shareple.entity.ChatMessageEntity;
 
+import org.springframework.http.ResponseEntity;
 import com.example.Shareple.entity.ChatRoom;
 import com.example.Shareple.repository.ChatRoomRepository;
 import lombok.RequiredArgsConstructor;
@@ -10,6 +11,8 @@ import org.springframework.web.bind.annotation.*;
 import com.example.Shareple.dto.ChatRoomRequestDto;
 import java.util.List;
 import com.example.Shareple.repository.ChatMessageRepository; // import 먼저
+import com.example.Shareple.dto.ChatRoomResponseDto;
+import com.example.Shareple.service.ChatService;
 
 
 import java.util.Optional;
@@ -21,7 +24,7 @@ public class ChatController {
 
     private final ChatRoomRepository chatRoomRepository;
     private final ChatMessageRepository chatMessageRepository;
-
+    private final ChatService chatService;
     @PostMapping("/create")
     public ChatRoom createChatRoom(@AuthenticationPrincipal OAuth2User user,
                                    @RequestBody ChatRoomRequestDto requestDto) {
@@ -29,18 +32,14 @@ public class ChatController {
         String receiverKakaoId = requestDto.getReceiverKakaoId();
         Long productId = requestDto.getProductId();
 
-        // 기존 채팅방 있는지 확인 (양방향)
+        // 완전히 일치하는 경우만 조회
         Optional<ChatRoom> existingRoom = chatRoomRepository
                 .findBySenderKakaoIdAndReceiverKakaoIdAndProductId(senderKakaoId, receiverKakaoId, productId);
 
+        // 있으면 재사용
         if (existingRoom.isPresent()) return existingRoom.get();
 
-        Optional<ChatRoom> reverseRoom = chatRoomRepository
-                .findByReceiverKakaoIdAndSenderKakaoIdAndProductId(senderKakaoId, receiverKakaoId, productId);
-
-        if (reverseRoom.isPresent()) return reverseRoom.get();
-
-        // 새로 생성
+        // 없으면 새로 생성
         ChatRoom room = ChatRoom.builder()
                 .senderKakaoId(senderKakaoId)
                 .receiverKakaoId(receiverKakaoId)
@@ -51,9 +50,31 @@ public class ChatController {
     }
 
 
+
     // ✅ 채팅 메시지 조회 API
     @GetMapping("/messages/{roomId}")
     public List<ChatMessageEntity> getMessages(@PathVariable String roomId) {
         return chatMessageRepository.findByRoomIdOrderByTimestampAsc(roomId);
     }
+
+//    // ✅ 내 채팅방 목록 조회 (판매자 입장에서)
+//    @GetMapping("/my-chat-rooms")
+//    public List<ChatRoom> getMyChatRooms(@AuthenticationPrincipal OAuth2User user) {
+//        String myKakaoId = user.getAttribute("id").toString();
+//        return chatRoomRepository.findByReceiverKakaoId(myKakaoId);
+//    }
+
+    @GetMapping("/all-my-chat-rooms")
+    public List<ChatRoom> getAllMyChatRooms(@AuthenticationPrincipal OAuth2User user) {
+        String myKakaoId = user.getAttribute("id").toString();
+        return chatRoomRepository.findBySenderKakaoIdOrReceiverKakaoId(myKakaoId, myKakaoId);
+    }
+    @GetMapping("/my-chat-rooms")
+    public ResponseEntity<List<ChatRoomResponseDto>> getMyChatRooms(@AuthenticationPrincipal OAuth2User oauth2User) {
+        String myKakaoId = oauth2User.getAttribute("id").toString();
+        List<ChatRoomResponseDto> rooms = chatService.getMyChatRooms(myKakaoId);
+        return ResponseEntity.ok(rooms);
+    }
+
+
 }
