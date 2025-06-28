@@ -73,11 +73,38 @@ const ChatRoomPage = () => {
         <div style={{ padding: '2rem' }}>
             <h2>채팅방 ID: {roomId}</h2>
             <div style={{ border: '1px solid gray', height: '300px', overflowY: 'scroll', padding: '1rem' }}>
-                {messages.map((msg, idx) => (
-                    <div key={idx} style={{ textAlign: msg.senderKakaoId === myKakaoId ? 'right' : 'left' }}>
-                        <b>{msg.senderKakaoId === myKakaoId ? "나" : msg.senderKakaoId}:</b> {msg.content}
-                    </div>
-                ))}
+                {messages.map((msg, idx) => {
+                    const isMine = msg.senderKakaoId === myKakaoId;
+                    const timeStr = msg.timestamp
+                        ? new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                        : '';
+
+                    return (
+                        <div key={idx} style={{
+                            textAlign: isMine ? 'right' : 'left',
+                            marginBottom: '1rem'
+                        }}>
+                            <div style={{
+                                display: 'inline-block',
+                                backgroundColor: isMine ? '#dcf8c6' : '#f1f0f0',
+                                padding: '0.5rem 1rem',
+                                borderRadius: '10px',
+                                maxWidth: '60%',
+                                wordWrap: 'break-word'
+                            }}>
+                                {msg.content}
+                            </div>
+                            <div style={{
+                                fontSize: '0.75rem',
+                                color: 'gray',
+                                marginTop: '0.25rem'
+                            }}>
+                                {timeStr}
+                            </div>
+                        </div>
+                    );
+                })}
+
             </div>
             <input
                 value={input}

@@ -26,7 +26,7 @@ public class ChatMessageEntity {
     private Long id;
 
     private String roomId;
-    private String sender;
+    private String senderKakaoId;
     private String content;
 
     private LocalDateTime timestamp;

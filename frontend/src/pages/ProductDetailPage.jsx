@@ -1,20 +1,28 @@
 import React, { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import axios from '../api/axiosInstance';
-import { useNavigate } from 'react-router-dom';
 
 const ProductDetailPage = () => {
     const { id } = useParams();
     const [product, setProduct] = useState(null);
+    const [currentUser, setCurrentUser] = useState(null);
     const navigate = useNavigate();
 
+    // 상품 정보 로드
     useEffect(() => {
         axios.get(`/api/products/${id}`)
             .then(res => setProduct(res.data))
             .catch(err => console.error(err));
     }, [id]);
 
-    if (!product) return <div>불러오는 중...</div>;
+    // 현재 로그인한 사용자 정보 로드
+    useEffect(() => {
+        axios.get('/api/auth/me')
+            .then(res => setCurrentUser(res.data))
+            .catch(err => console.error('유저 정보 불러오기 실패', err));
+    }, []);
+
+    if (!product || !currentUser) return <div>불러오는 중...</div>;
 
     return (
         <div style={{ padding: '2rem' }}>
@@ -35,36 +43,52 @@ const ProductDetailPage = () => {
             <p><strong>판매자:</strong> {product.sellerNickname}</p>
             <p><strong>이메일:</strong> {product.sellerEmail}</p>
 
-            <button
-                onClick={() => {
-                    axios.post('/api/chat/create', {
-                        receiverKakaoId: product.sellerKakaoId  // 🔸 이 값이 백엔드에 전달됨
-                    })
-                        .then(res => {
-                            const roomId = res.data.id;
-                            navigate(`/chat/${roomId}`);  // 🔸 채팅방 페이지로 이동
+            {product.sellerKakaoId !== currentUser.kakaoId ? (
+                <button
+                    onClick={() => {
+                        axios.post('/api/chat/create', {
+                            receiverKakaoId: product.sellerKakaoId,
+                            productId: product.id
                         })
-                        .catch(err => {
-                            console.error(err);
-                            alert("채팅방 생성에 실패했습니다.");
-                        });
-                }}
-                style={{
-                    marginTop: '1rem',
-                    padding: '0.5rem 1rem',
-                    backgroundColor: '#4caf50',
-                    color: 'white',
-                    border: 'none',
-                    borderRadius: '4px',
-                    cursor: 'pointer'
-                }}
-            >
-                채팅하기
-            </button>
-
+                            .then(res => {
+                                const roomId = res.data.id;
+                                navigate(`/chat/${roomId}`);
+                            })
+                            .catch(err => {
+                                console.error(err);
+                                alert("채팅방 생성에 실패했습니다.");
+                            });
+                    }}
+                    style={{
+                        marginTop: '1rem',
+                        padding: '0.5rem 1rem',
+                        backgroundColor: '#4caf50',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '4px',
+                        cursor: 'pointer'
+                    }}
+                >
+                    💬 채팅하기
+                </button>
+            ) : (
+                <button
+                    onClick={() => navigate('/chat-rooms')}
+                    style={{
+                        marginTop: '1rem',
+                        padding: '0.5rem 1rem',
+                        backgroundColor: '#1976d2',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '4px',
+                        cursor: 'pointer'
+                    }}
+                >
+                    📋 채팅 목록 보기
+                </button>
+            )}
         </div>
     );
-
 };
 
 export default ProductDetailPage;
