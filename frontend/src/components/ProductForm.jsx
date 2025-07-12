@@ -174,7 +174,7 @@ const ProductForm = () => {
                     <option value="직거래">직거래</option>
                     <option value="택배">택배</option>
                 </select>
-                    </select>
+
             <select name="location" onChange={handleChange}>
                 <option value="">직거래 장소</option>
                 <option value="강남구">강남구</option>
