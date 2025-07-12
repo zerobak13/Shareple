@@ -39,6 +39,8 @@ const Navbar = () => {
             marginBottom: '2rem',
         }}>
             <Link to="/" style={{ textDecoration: 'none', color: '#333' }}>Main</Link>
+            <Link to="/search" style={{ textDecoration: 'none', color: '#333' }}>검색</Link>
+
             {!user && <Link to="/login" style={{ textDecoration: 'none', color: '#333' }}>Login</Link>}
             {user && (
                 <>
