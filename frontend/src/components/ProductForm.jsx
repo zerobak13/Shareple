@@ -12,9 +12,16 @@ const ProductForm = () => {
         deadline: '',
         method: '',
         location: '',
+        
     });
+
+
     const [image, setImage] = useState(null);
     const navigate = useNavigate();
+
+    const [formattedPrice, setFormattedPrice] = useState('');
+    const [formattedDeposit, setFormattedDeposit] = useState('');
+
 
     const handleChange = e => {
         setForm({ ...form, [e.target.name]: e.target.value });
@@ -24,22 +31,70 @@ const ProductForm = () => {
         setImage(e.target.files[0]);
     };
 
-    const handleSubmit = async e => {
-        e.preventDefault();
-        const data = new FormData();
-        Object.entries(form).forEach(([key, value]) => data.append(key, value));
-        if (image) data.append('image', image);
 
-        try {
-            await axios.post('/api/products', data, {
-                headers: { 'Content-Type': 'multipart/form-data' },
-            });
-            alert('등록 성공!');
-            navigate('/main');
-        } catch (err) {
-            alert('등록 실패');
-        }
+    const formatCurrency = (value) => {
+    const num = value.replace(/[^0-9]/g, ''); // 숫자만 허용
+    const limited = Math.min(Number(num), 3000000); // 300만 원 제한
+    return limited.toLocaleString(); // 쉼표 자동 추가  
     };
+
+    const parseCurrency = (value) => {
+        return value.replaceAll(',', ''); // 백엔드에 보낼 때 ',' 제거
+    };
+
+    const handlePriceChange = (e) => {
+        const formatted = formatCurrency(e.target.value);
+        setForm({ ...form, price: parseCurrency(formatted) }); // form에는 숫자만 저장
+        setFormattedPrice(formatted); // 화면에는 쉼표 있는 값 보여줌
+    };
+
+    const handleDepositChange = (e) => {
+        const formatted = formatCurrency(e.target.value);
+        setForm({ ...form, deposit: parseCurrency(formatted) });
+        setFormattedDeposit(formatted);
+    };
+
+
+
+        const handleSubmit = async e => {
+            e.preventDefault();
+            const data = new FormData();
+            Object.entries(form).forEach(([key, value]) => data.append(key, value));
+            if (image) data.append('image', image);
+
+            try {
+                await axios.post('/api/products', data, {
+                    headers: { 'Content-Type': 'multipart/form-data' },
+                });
+                alert('등록 성공!');
+                navigate('/main');
+            } catch (err) {
+                alert('등록 실패');
+            }
+    };
+
+
+    const numberToKorean = (num) => {
+        if (!num || isNaN(num)) return '';
+        const units = ['', '만', '억', '조'];
+        const splitUnit = 10000;
+        const resultArray = [];
+
+        let result = '';
+        let i = 0;
+        while (num > 0) {
+            const chunk = num % splitUnit;
+            if (chunk) {
+            resultArray.unshift(chunk.toLocaleString() + units[i]);
+            }
+            num = Math.floor(num / splitUnit);
+            i++;
+        }
+
+        result = resultArray.join(' ') + ' 원';
+        return result;
+    };
+
 
     return (
         <div className="max-w-2xl mx-auto p-8 bg-white shadow-md rounded-xl mt-8">
@@ -52,19 +107,37 @@ const ProductForm = () => {
                     className="w-full border rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-[#00C7BE]"
                 />
                 <div className="flex gap-4">
-                    <input
+                    <div className="w-full relative">
+                        <input
                         name="price"
                         placeholder="가격(1일 기준)"
-                        onChange={handleChange}
-                        className="w-full border rounded-lg p-3 focus:ring-[#00C7BE]"
-                    />
-                    <input
+                        value={formattedPrice}
+                        onChange={handlePriceChange}
+                        className="w-full border rounded-lg p-3 pr-24 focus:ring-[#00C7BE]"
+                        />
+                        {formattedPrice && (
+                        <span className="absolute top-1/2 right-3 transform -translate-y-1/2 text-sm text-gray-500">
+                            {numberToKorean(Number(form.price))}
+                        </span>
+                        )}
+                    </div>
+
+                    <div className="w-full relative">
+                        <input
                         name="deposit"
                         placeholder="보증금"
-                        onChange={handleChange}
-                        className="w-full border rounded-lg p-3 focus:ring-[#00C7BE]"
-                    />
+                        value={formattedDeposit}
+                        onChange={handleDepositChange}
+                        className="w-full border rounded-lg p-3 pr-24 focus:ring-[#00C7BE]"
+                        />
+                        {formattedDeposit && (
+                        <span className="absolute top-1/2 right-3 transform -translate-y-1/2 text-sm text-gray-500">
+                            {numberToKorean(Number(form.deposit))}
+                        </span>
+                        )}
+                    </div>
                 </div>
+
                 <textarea
                     name="description"
                     placeholder="상세 설명"
