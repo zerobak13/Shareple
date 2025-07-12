@@ -52,7 +52,12 @@ const ProductForm = () => {
             <textarea name="description" placeholder="상세 설명" onChange={handleChange} />
             <select name="category" onChange={handleChange}>
                 <option value="">카테고리 선택</option>
-                <option value="전자제품">전자제품</option>
+                <option value="게임">게임</option>
+                <option value="서적">서적</option>
+                <option value="의류">의류</option>
+                <option value="악세서리">악세서리</option>
+                <option value="전자기기">전자기기</option>
+                <option value="여행용품">여행용품</option>
                 <option value="생활용품">생활용품</option>
             </select>
             <input type="date" name="deadline" onChange={handleChange} />
