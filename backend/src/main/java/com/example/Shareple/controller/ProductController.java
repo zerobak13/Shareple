@@ -167,6 +167,17 @@ public class ProductController {
         return new ProductDetailDto(product, user);
     }
 
+    @GetMapping("/filter")
+    public List<Product> filterProducts(
+            @RequestParam(required = false) String location,
+            @RequestParam(required = false) String deadline,
+            @RequestParam(required = false) Integer minPrice,
+            @RequestParam(required = false) Integer maxPrice,
+            @RequestParam(required = false) String category
+    ) {
+        return productService.filterProducts(location, deadline, minPrice, maxPrice, category);
+    }
+
 
 
 
