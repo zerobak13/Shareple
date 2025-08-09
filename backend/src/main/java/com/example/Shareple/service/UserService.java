@@ -72,26 +72,47 @@ public class UserService {
         return false;
     }
 
-    public UserResponseDto processOAuthPostLogin(String kakaoId,
-                                                 String nickname,
-                                                 String email,
-                                                 String profileImageUrl) {
-        Optional<User> existing = userRepository.findByKakaoId(kakaoId);
-        if (existing.isPresent()) {
-            return toResponseDto(existing.get());
-        }
-        User user = User.builder()
-                .kakaoId(kakaoId)
-                .nickname(nickname)
-                .email(email)
-                .profileImageUrl(profileImageUrl)
-                .name("")
-                .phone("")
-                .address("")
-                .build();
-        User saved = userRepository.save(user);
-        return toResponseDto(saved);
+//    public UserResponseDto processOAuthPostLogin(String kakaoId,
+//                                                 String nickname,
+//                                                 String email,
+//                                                 String profileImageUrl) {
+//        Optional<User> existing = userRepository.findByKakaoId(kakaoId);
+//        if (existing.isPresent()) {
+//            return toResponseDto(existing.get());
+//        }
+//        User user = User.builder()
+//                .kakaoId(kakaoId)
+//                .nickname(nickname)
+//                .email(email)
+//                .profileImageUrl(profileImageUrl)
+//                .name("")
+//                .phone("")
+//                .address("")
+//                .build();
+//        User saved = userRepository.save(user);
+//        return toResponseDto(saved);
+//    }
+public UserResponseDto processOAuthPostLogin(String kakaoId,
+                                             String nickname,         // 사용자가 입력할 별명 → 초기엔 공백
+                                             String email,
+                                             String profileImageUrl,
+                                             String name) {           // 카카오 닉네임
+    Optional<User> existing = userRepository.findByKakaoId(kakaoId);
+    if (existing.isPresent()) {
+        return toResponseDto(existing.get());
     }
+    User user = User.builder()
+            .kakaoId(kakaoId)
+            .nickname(nickname)      // ➡️ 공백
+            .email(email)
+            .profileImageUrl(profileImageUrl)
+            .name(name)              // ➡️ 카카오 닉네임 저장
+            .phone("")
+            .address("")
+            .build();
+    User saved = userRepository.save(user);
+    return toResponseDto(saved);
+}
 
     private UserResponseDto toResponseDto(User user) {
         return UserResponseDto.builder()

@@ -40,12 +40,20 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
             }
         }
 
+//        userService.processOAuthPostLogin(
+//                kakaoId,
+//                kakaoNickname != null ? kakaoNickname : "",
+//                "",
+//                profileImageUrl != null ? profileImageUrl : ""
+//        );
         userService.processOAuthPostLogin(
                 kakaoId,
-                kakaoNickname != null ? kakaoNickname : "",
-                "",
-                profileImageUrl != null ? profileImageUrl : ""
+                "", // nickname → 공백 (사용자 입력 필요)
+                email != null ? email : "",
+                profileImageUrl != null ? profileImageUrl : "",
+                kakaoNickname != null ? kakaoNickname : "" // name ← 카카오 닉네임 저장
         );
+
 
         return oauth2User;
     }
