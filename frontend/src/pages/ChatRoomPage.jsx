@@ -1,3 +1,4 @@
+// ChatRoomPage.jsx
 import React, { useEffect, useRef, useState, useMemo } from 'react';
 import SockJS from 'sockjs-client';
 import { Client } from '@stomp/stompjs';
@@ -21,14 +22,23 @@ const ChatRoomPage = () => {
 
     const clientRef = useRef(null);
 
-    // 공통 POST
     const post = async (url) => {
         const res = await fetch(url, { method: 'POST', credentials: 'include' });
         if (!res.ok) throw new Error(await res.text());
         return res;
     };
 
-    // 데이터 로드
+    // 현재 상태 새로고침
+    const refreshCurrent = async () => {
+        try {
+            const cur = await fetch(
+                `http://localhost:8080/api/rentals/room/${roomId}/current`,
+                { credentials: 'include' }
+            ).then(r => r.json());
+            setCurrent(cur);
+        } catch {}
+    };
+
     useEffect(() => {
         // 1) 내 정보
         fetch(`http://localhost:8080/api/auth/me`, { credentials: 'include' })
@@ -47,9 +57,7 @@ const ChatRoomPage = () => {
             .catch(e => console.error(e));
 
         // 4) 현재 거래 상태
-        fetch(`http://localhost:8080/api/rentals/room/${roomId}/current`, { credentials: 'include' })
-            .then(r => r.json()).then(setCurrent)
-            .catch(e => console.error('current 실패', e));
+        refreshCurrent();
 
         // 5) 실시간
         const socket = new SockJS('http://localhost:8080/ws');
@@ -60,10 +68,9 @@ const ChatRoomPage = () => {
                     const msg = JSON.parse(frame.body);
                     setMessages(prev => [...prev, msg]);
 
-                    // 거래 관련 메시지면 current 갱신 (선택)
-                    if (msg.type === 'RENTAL_PROPOSAL' || msg.type === 'RENTAL_UPDATE') {
-                        fetch(`http://localhost:8080/api/rentals/room/${roomId}/current`, { credentials: 'include' })
-                            .then(r => r.json()).then(setCurrent).catch(() => {});
+                    if (msg.type === 'RENTAL_PROPOSAL' || msg.type === 'RENTAL_UPDATE'
+                        || (msg.type === 'SYSTEM' && msg.msgType === 'RENTAL')) {
+                        refreshCurrent();
                     }
                 });
             }
@@ -95,7 +102,7 @@ const ChatRoomPage = () => {
         const { startDate, endDate, deposit } = proposeForm;
         if (!startDate || !endDate || !deposit) return alert('모든 값을 입력해주세요.');
 
-        const borrowerIdParam = roomMeta.otherUserId;
+        const borrowerIdParam = roomMeta.otherUserId; // 백엔드가 userId 받도록 구현됨
 
         const qs = new URLSearchParams({
             roomId,
@@ -106,43 +113,57 @@ const ChatRoomPage = () => {
         try {
             await post(`http://localhost:8080/api/rentals/propose?${qs}`);
             closePropose();
-            // 제안 후 상태 새로고침
-            const cur = await fetch(`http://localhost:8080/api/rentals/room/${roomId}/current`, { credentials: 'include' }).then(r => r.json());
-            setCurrent(cur);
+            await refreshCurrent();
         } catch (e) {
             alert('제안 실패: ' + e.message);
         }
     };
 
     // 액션
-    const accept = async () => {
+    const accept = async (rentalId = current.rentalId) => {
         try {
-            await post(`http://localhost:8080/api/rentals/${current.rentalId}/accept`);
-            const cur = await fetch(`http://localhost:8080/api/rentals/room/${roomId}/current`, { credentials: 'include' }).then(r => r.json());
-            setCurrent(cur);
+            await post(`http://localhost:8080/api/rentals/${rentalId}/accept`);
+            await refreshCurrent();
         } catch (e) { alert('수락 실패: ' + e.message); }
     };
-    const reject = async () => {
+    const reject = async (rentalId = current.rentalId) => {
         try {
-            await post(`http://localhost:8080/api/rentals/${current.rentalId}/reject`);
-            const cur = await fetch(`http://localhost:8080/api/rentals/room/${roomId}/current`, { credentials: 'include' }).then(r => r.json());
-            setCurrent(cur);
+            await post(`http://localhost:8080/api/rentals/${rentalId}/reject`);
+            await refreshCurrent();
         } catch (e) { alert('거절 실패: ' + e.message); }
     };
-    const complete = async () => {
+    const complete = async (rentalId = current.rentalId) => {
         try {
-            await post(`http://localhost:8080/api/rentals/${current.rentalId}/complete`);
-            const cur = await fetch(`http://localhost:8080/api/rentals/room/${roomId}/current`, { credentials: 'include' }).then(r => r.json());
-            setCurrent(cur);
+            await post(`http://localhost:8080/api/rentals/${rentalId}/complete`);
+            await refreshCurrent();
         } catch (e) { alert('거래완료 실패: ' + e.message); }
     };
 
     // 내가 주인인가?
-     const amOwner = useMemo(() =>
-           !!(roomMeta && myKakaoId &&
-                  String(roomMeta.ownerKakaoId) === String(myKakaoId)
-               ), [roomMeta, myKakaoId]
-         );
+    const amOwner = useMemo(
+        () => !!(roomMeta && myKakaoId && String(roomMeta.ownerKakaoId) === String(myKakaoId)),
+        [roomMeta, myKakaoId]
+    );
+
+    // 메시지 → 렌더용 정규화
+    const toRenderable = (msg) => {
+        // DB 저장형: SYSTEM + msgType=RENTAL + payloadJson
+        if (msg?.type === 'SYSTEM' && msg?.msgType === 'RENTAL' && msg?.payloadJson) {
+            try {
+                const payload = JSON.parse(msg.payloadJson);
+                return { kind: 'rental', rental: payload };
+            } catch {
+                // 파싱 실패 시 시스템 텍스트로 처리
+                return { kind: 'system', text: '시스템' };
+            }
+        }
+        // 실시간형: RENTAL_PROPOSAL / RENTAL_UPDATE
+        if (msg?.type === 'RENTAL_PROPOSAL' || msg?.type === 'RENTAL_UPDATE') {
+            return { kind: 'rental', rental: msg };
+        }
+        // 일반 채팅
+        return { kind: 'chat', msg };
+    };
 
     // 하단 액션바
     const ActionBar = () => {
@@ -154,32 +175,32 @@ const ChatRoomPage = () => {
             ) : null;
         }
         if (current.status === 'PENDING') {
-                 // ✅ 대여자에게만 수락/거절 버튼, 주인은 안내 문구
-                     if (!amOwner) {
-                       return (
-                             <div style={{ display:'flex', gap:8 }}>
-                                   <button onClick={accept}>수락</button>
-                                  <button onClick={reject}>거절</button>
-                                 </div>
-                           );
-                    }
-                 return <div style={{color:'#888'}}>대여자가 수락/거절을 선택할 때까지 기다려주세요.</div>;
-               }
+            if (!amOwner) {
+                return (
+                    <div style={{ display:'flex', gap:8 }}>
+                        <button onClick={() => accept()}>수락</button>
+                        <button onClick={() => reject()}>거절</button>
+                    </div>
+                );
+            }
+            return <div style={{color:'#888'}}>대여자가 수락/거절을 선택할 때까지 기다려주세요.</div>;
+        }
         if (current.status === 'ACTIVE') {
             return (
                 <div style={{ display: 'flex', gap: 8 }}>
-                    <button onClick={complete}>거래완료</button>
+                    <button onClick={() => complete()}>거래완료</button>
                 </div>
             );
         }
-        return null; // COMPLETED/REJECTED 등
+        return null; // COMPLETED / REJECTED 등
     };
 
     return (
         <div style={{ padding: '2rem', display: 'grid', gap: '1rem' }}>
             <h2>채팅방 ID: {roomId}</h2>
-            {/* === DEBUG INFO === */}
-            <div style={{ fontSize: '12px', color: '#888', background: '#eee', padding: '8px', borderRadius: '4px' }}>
+
+            {/* DEBUG */}
+            <div style={{ fontSize: 12, color: '#888', background: '#eee', padding: 8, borderRadius: 4 }}>
                 <div>myKakaoId: {String(myKakaoId)}</div>
                 <div>roomMeta: {JSON.stringify(roomMeta)}</div>
                 <div>current: {JSON.stringify(current)}</div>
@@ -187,26 +208,52 @@ const ChatRoomPage = () => {
 
             {/* 메시지 영역 */}
             <div style={{ border: '1px solid gray', height: 360, overflowY: 'auto', padding: '1rem' }}>
-                {messages.map((msg, idx) => {
-                    if (msg.type === 'RENTAL_PROPOSAL' || msg.type === 'RENTAL_UPDATE' || msg.type === 'SYSTEM') {
+                {messages.map((raw, idx) => {
+                    const normalized = toRenderable(raw);
+
+                    // 거래 카드
+                    if (normalized.kind === 'rental' && normalized.rental) {
+                        const r = normalized.rental;
                         return (
                             <div key={idx} style={{ marginBottom: '1rem' }}>
                                 <div style={{ fontWeight: 600, marginBottom: 4 }}>
-                                    {msg.type === 'RENTAL_PROPOSAL' && '💬 대여 제안'}
-                                    {msg.type === 'RENTAL_UPDATE' && '🔔 거래 업데이트'}
-                                    {msg.type === 'SYSTEM' && '📢 시스템'}
+                                    {r.type === 'RENTAL_PROPOSAL' ? '💬 대여 제안' : '🔔 거래 업데이트'}
                                 </div>
-                                {msg.productName && <div>상품: {msg.productName}</div>}
-                                {msg.periodStart && msg.periodEnd && <div>기간: {msg.periodStart} ~ {msg.periodEnd}</div>}
-                                {typeof msg.deposit === 'number' && <div>보증금: {msg.deposit.toLocaleString()}원</div>}
-                                {msg.status && <div>상태: {msg.status}</div>}
-                                {msg.text && <div>{msg.text}</div>}
-                                {typeof msg.completeProgress === 'number' && <div>진행: {msg.completeProgress}/2</div>}
+                                {r.productName && <div>상품: {r.productName}</div>}
+                                {r.periodStart && r.periodEnd && <div>기간: {r.periodStart} ~ {r.periodEnd}</div>}
+                                {typeof r.deposit === 'number' && <div>보증금: {r.deposit.toLocaleString()}원</div>}
+                                {r.status && <div>상태: {r.status}</div>}
+                                {r.text && <div>{r.text}</div>}
+                                {typeof r.completeProgress === 'number' && <div>진행: {r.completeProgress}/2</div>}
+
+                                {/* 액션 버튼 (메시지에 동봉된 actions 기준) */}
+                                <div style={{ marginTop: 6, display: 'flex', gap: 8 }}>
+                                    {Array.isArray(r.actions) && r.actions.includes('ACCEPT') && (
+                                        <button onClick={() => accept(r.rentalId)}>수락</button>
+                                    )}
+                                    {Array.isArray(r.actions) && r.actions.includes('REJECT') && (
+                                        <button onClick={() => reject(r.rentalId)}>거절</button>
+                                    )}
+                                    {Array.isArray(r.actions) && r.actions.includes('COMPLETE') && (
+                                        <button onClick={() => complete(r.rentalId)}>거래완료</button>
+                                    )}
+                                </div>
+                            </div>
+                        );
+                    }
+
+                    // 일반 시스템 텍스트 (예비)
+                    if (normalized.kind === 'system') {
+                        return (
+                            <div key={idx} style={{ marginBottom: '1rem' }}>
+                                <div style={{ fontWeight: 600, marginBottom: 4 }}>📢 시스템</div>
+                                <div>{normalized.text || raw.content || ''}</div>
                             </div>
                         );
                     }
 
                     // 일반 채팅
+                    const msg = normalized.msg || raw;
                     const isMine = msg.senderKakaoId === myKakaoId;
                     const timeStr = msg.timestamp
                         ? new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
@@ -256,34 +303,37 @@ const ChatRoomPage = () => {
                         <div style={{ display: 'grid', gap: 8 }}>
                             <label>
                                 시작일:
-                                <input type="date"
-                                       value={proposeForm.startDate}
-                                       onChange={e => setProposeForm(f => ({ ...f, startDate: e.target.value }))}/>
+                                <input
+                                    type="date"
+                                    value={proposeForm.startDate}
+                                    onChange={e => setProposeForm(f => ({ ...f, startDate: e.target.value }))}
+                                />
                             </label>
                             <label>
                                 종료일:
-                                <input type="date"
-                                       value={proposeForm.endDate}
-                                       onChange={e => setProposeForm(f => ({ ...f, endDate: e.target.value }))}/>
+                                <input
+                                    type="date"
+                                    value={proposeForm.endDate}
+                                    onChange={e => setProposeForm(f => ({ ...f, endDate: e.target.value }))}
+                                />
                             </label>
                             <label>
                                 보증금:
-                                <input type="number" min="0" step="1000"
-                                       placeholder="예: 50000"
-                                       value={proposeForm.deposit}
-                                       onChange={e => setProposeForm(f => ({ ...f, deposit: e.target.value }))}/>
+                                <input
+                                    type="number" min="0" step="1000" placeholder="예: 50000"
+                                    value={proposeForm.deposit}
+                                    onChange={e => setProposeForm(f => ({ ...f, deposit: e.target.value }))}
+                                />
                             </label>
                         </div>
                         <div style={{ marginTop: 12, display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
                             <button onClick={() => setProposeOpen(false)}>취소</button>
                             <button onClick={submitPropose}>확정하기</button>
                         </div>
-
                     </div>
                 </div>
             )}
         </div>
-
     );
 };
 

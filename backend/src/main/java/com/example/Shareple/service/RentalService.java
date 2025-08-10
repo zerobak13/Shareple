@@ -1,22 +1,18 @@
 package com.example.Shareple.service;
 
 import com.example.Shareple.dto.RentalMessage;
-import com.example.Shareple.entity.ChatRoom;
-import com.example.Shareple.entity.Product;
-import com.example.Shareple.entity.ProductStatus;
-import com.example.Shareple.entity.Rental;
-import com.example.Shareple.entity.RentalStatus;
-import com.example.Shareple.entity.User;
-import com.example.Shareple.repository.ChatRoomRepository;
-import com.example.Shareple.repository.ProductRepository;
-import com.example.Shareple.repository.RentalRepository;
-import com.example.Shareple.repository.UserRepository;
+import com.example.Shareple.entity.*;
+import com.example.Shareple.repository.*;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 @Service
 @Transactional
@@ -27,18 +23,41 @@ public class RentalService {
     private final ProductRepository productRepository;
     private final UserRepository userRepository;
     private final ChatRoomRepository chatRoomRepository;
+    private final ChatMessageRepository chatMessageRepository;   // ⬅️ 추가
 
-    // STOMP 브로드캐스트용
     private final SimpMessagingTemplate messagingTemplate;
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
-    /** 프로젝트 STOMP 구독 주소에 맞춰 수정하세요. (예: "/topic/chat/{roomId}" 또는 "/sub/chat/room/{roomId}") */
-    private String topic(Long roomId) {
-        return "/topic/chat/" + roomId;
+    /** 프로젝트 STOMP 주소에 맞춰 조정 */
+    private String topic(Long roomId) { return "/topic/chat/" + roomId; }
+
+    /** 시스템(거래) 메시지 DB 저장 + 트랜잭션 커밋 후 방송 */
+    private void saveSystemMessageAndBroadcast(Long roomId, String title, RentalMessage msg) {
+        // 1) DB 저장
+        ChatMessageEntity e = new ChatMessageEntity();
+        e.setRoomId(String.valueOf(roomId));
+        e.setSenderKakaoId("SYSTEM");
+        e.setTimestamp(LocalDateTime.now());
+        e.setType("SYSTEM");      // enum('SYSTEM','USER') 에 맞춤
+        e.setMsgType("RENTAL");   // 우리 구분용
+        e.setContent(title);      // 목록에서 보일 요약
+
+        try {
+            e.setPayloadJson(objectMapper.writeValueAsString(msg));
+        } catch (Exception ignore) {
+            e.setPayloadJson(null);
+        }
+        chatMessageRepository.save(e);
+
+        // 2) 커밋 이후에만 소켓 방송 (정합성 보장)
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override public void afterCommit() {
+                messagingTemplate.convertAndSend(topic(roomId), msg);
+            }
+        });
     }
 
-    /** 거래 제안 (등록자 → 대여자) : 채팅방에 제안 메시지 전송 + 상태 PENDING 저장
-     *  시그니처: ownerId, productId, roomId, borrowerId, start, end, deposit  (A 방식)
-     */
+    /** 거래 제안 (등록자 → 대여자) */
     public Rental propose(Long ownerId,
                           Long productId,
                           Long roomId,
@@ -47,21 +66,12 @@ public class RentalService {
                           LocalDate endDate,
                           int deposit) {
 
-        // --- 기본 검증 ---
-        if (startDate == null || endDate == null) {
-            throw new IllegalArgumentException("대여 기간이 비어 있습니다.");
-        }
-        if (endDate.isBefore(startDate)) {
-            throw new IllegalArgumentException("대여 종료일이 시작일보다 빠릅니다.");
-        }
-        if (deposit < 0) {
-            throw new IllegalArgumentException("보증금은 음수일 수 없습니다.");
-        }
+        if (startDate == null || endDate == null) throw new IllegalArgumentException("대여 기간이 비어 있습니다.");
+        if (endDate.isBefore(startDate)) throw new IllegalArgumentException("대여 종료일이 시작일보다 빠릅니다.");
+        if (deposit < 0) throw new IllegalArgumentException("보증금은 음수일 수 없습니다.");
 
-        // --- 엔티티 조회 ---
         Product product = productRepository.findById(productId)
                 .orElseThrow(() -> new IllegalArgumentException("상품이 존재하지 않습니다."));
-
         if (product.getStatus() != ProductStatus.AVAILABLE) {
             throw new IllegalStateException("이미 대여중인 상품입니다.");
         }
@@ -74,9 +84,6 @@ public class RentalService {
         ChatRoom room = chatRoomRepository.findById(roomId)
                 .orElseThrow(() -> new IllegalArgumentException("채팅방이 존재하지 않습니다."));
 
-        // (선택) 권한/참여자 검증: product.getOwner()가 있다면 ownerId와 일치 여부 확인, room 참여자에 owner/borrower 포함 여부 확인 등
-
-        // --- 저장 ---
         Rental rental = new Rental();
         rental.setProduct(product);
         rental.setOwner(owner);
@@ -86,10 +93,8 @@ public class RentalService {
         rental.setEndDate(endDate);
         rental.setDeposit(deposit);
         rental.setStatus(RentalStatus.PENDING);
-
         rentalRepository.save(rental);
 
-        // --- 채팅으로 제안 메시지 브로드캐스트 ---
         RentalMessage msg = new RentalMessage();
         msg.setType("RENTAL_PROPOSAL");
         msg.setRoomId(roomId);
@@ -101,12 +106,13 @@ public class RentalService {
         msg.setDeposit(deposit);
         msg.setStatus(rental.getStatus().name());
         msg.setActions(new String[]{"ACCEPT", "REJECT"});
+        msg.setCompleteProgress(0);
 
-        messagingTemplate.convertAndSend(topic(roomId), msg);
+        saveSystemMessageAndBroadcast(roomId, "대여 제안", msg);
         return rental;
     }
 
-    /** 수락 (대여자만 가능) : Rental=ACTIVE, Product=RENTED, 채팅 업데이트 */
+    /** 수락 (대여자만 가능) : Rental=ACTIVE, Product=RENTED */
     public void accept(Long rentalId, Long borrowerId) {
         Rental r = rentalRepository.findById(rentalId)
                 .orElseThrow(() -> new IllegalArgumentException("거래가 존재하지 않습니다."));
@@ -117,25 +123,24 @@ public class RentalService {
             throw new IllegalStateException("이미 처리된 요청입니다.");
         }
 
-        // 상태 전환
         r.setStatus(RentalStatus.ACTIVE);
         r.getProduct().setStatus(ProductStatus.RENTED);
 
-        // 채팅 알림
         RentalMessage msg = new RentalMessage();
         msg.setType("RENTAL_UPDATE");
         msg.setRoomId(r.getChatRoom().getId());
         msg.setRentalId(r.getId());
         msg.setProductId(r.getProduct().getId());
-        msg.setStatus(r.getStatus().name());
+        msg.setDeposit(r.getDeposit());
+        msg.setStatus(r.getStatus().name()); // ACTIVE
         msg.setText("거래가 수락되어 대여중으로 전환되었습니다.");
-        msg.setActions(new String[]{"COMPLETE"});  // 양쪽 모두 거래완료 버튼 표시
+        msg.setActions(new String[]{"COMPLETE"});
         msg.setCompleteProgress(0);
 
-        messagingTemplate.convertAndSend(topic(r.getChatRoom().getId()), msg);
+        saveSystemMessageAndBroadcast(r.getChatRoom().getId(), "거래 업데이트", msg);
     }
 
-    /** 거절 (대여자만 가능) : Rental=REJECTED, 채팅 업데이트 */
+    /** 거절 (대여자만 가능) : Rental=REJECTED */
     public void reject(Long rentalId, Long borrowerId) {
         Rental r = rentalRepository.findById(rentalId)
                 .orElseThrow(() -> new IllegalArgumentException("거래가 존재하지 않습니다."));
@@ -153,15 +158,16 @@ public class RentalService {
         msg.setRoomId(r.getChatRoom().getId());
         msg.setRentalId(r.getId());
         msg.setProductId(r.getProduct().getId());
-        msg.setStatus(r.getStatus().name());
+        msg.setDeposit(r.getDeposit());
+        msg.setStatus(r.getStatus().name()); // REJECTED
         msg.setText("거래가 거절되었습니다.");
-        msg.setActions(new String[]{}); // 버튼 없음
+        msg.setActions(new String[]{});
         msg.setCompleteProgress(0);
 
-        messagingTemplate.convertAndSend(topic(r.getChatRoom().getId()), msg);
+        saveSystemMessageAndBroadcast(r.getChatRoom().getId(), "거래 업데이트", msg);
     }
 
-    /** 거래완료 (양쪽 다 눌러야 최종 완료) : 1/2 → 진행중, 2/2 → COMPLETED + 상품 AVAILABLE 복귀 */
+    /** 거래완료 (양쪽 다 눌러야 완료) : 1/2 → 진행중, 2/2 → COMPLETED + 상품 AVAILABLE */
     public void complete(Long rentalId, Long userId) {
         Rental r = rentalRepository.findById(rentalId)
                 .orElseThrow(() -> new IllegalArgumentException("거래가 존재하지 않습니다."));
@@ -174,11 +180,7 @@ public class RentalService {
         } else {
             throw new IllegalArgumentException("권한이 없습니다. (거래 당사자만 완료 가능)");
         }
-
-        if (!touched) {
-            // 이미 완료 버튼을 누른 사용자가 다시 누른 경우는 무시
-            return;
-        }
+        if (!touched) return;
 
         int progress = (r.isOwnerCompleted() ? 1 : 0) + (r.isBorrowerCompleted() ? 1 : 0);
 
@@ -192,7 +194,8 @@ public class RentalService {
         msg.setRoomId(r.getChatRoom().getId());
         msg.setRentalId(r.getId());
         msg.setProductId(r.getProduct().getId());
-        msg.setStatus(r.getStatus().name());
+        msg.setDeposit(r.getDeposit());
+        msg.setStatus(r.getStatus().name()); // ACTIVE or COMPLETED
         msg.setCompleteProgress(progress);
 
         if (r.getStatus() == RentalStatus.COMPLETED) {
@@ -203,6 +206,6 @@ public class RentalService {
             msg.setActions(new String[]{"COMPLETE"});
         }
 
-        messagingTemplate.convertAndSend(topic(r.getChatRoom().getId()), msg);
+        saveSystemMessageAndBroadcast(r.getChatRoom().getId(), "거래 업데이트", msg);
     }
 }
