@@ -1,0 +1,297 @@
+/* General Body and Container Styling */
+body {
+    font-family: 'Arial', sans-serif;
+    background-color: #f0f2f5;
+    margin: 0;
+    padding: 0;
+    color: #333;
+}
+
+.mypage-container {
+    max-width: 1200px;
+    margin: 40px auto;
+    padding: 20px;
+    background-color: #fff;
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.mypage-title {
+    text-align: center;
+    color: #2c3e50;
+    margin-bottom: 30px;
+    font-size: 2.5em;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+    border-bottom: 2px solid #eee;
+    padding-bottom: 15px;
+}
+
+/* Layout for Sidebar and Content */
+.mypage-layout {
+    display: flex;
+    gap: 30px;
+}
+
+.mypage-sidebar {
+    flex: 0 0 220px; /* Fixed width for sidebar */
+    background-color: #f8f9fa;
+    padding: 20px 0;
+    border-radius: 10px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+}
+
+.mypage-sidebar ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.mypage-sidebar li {
+    margin-bottom: 5px;
+}
+
+.mypage-sidebar button {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    padding: 15px 25px;
+    background: none;
+    border: none;
+    text-align: left;
+    font-size: 1.1em;
+    color: #555;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border-radius: 0 25px 25px 0; /* Rounded right corners */
+}
+
+.mypage-sidebar button:hover {
+    background-color: #e9ecef;
+    color: #007bff;
+}
+
+.mypage-sidebar button.active {
+    background-color: #007bff;
+    color: #fff;
+    font-weight: bold;
+    box-shadow: 2px 2px 8px rgba(0, 123, 255, 0.3);
+}
+
+.mypage-sidebar button.active:hover {
+    background-color: #0069d9;
+    color: #fff;
+}
+
+/* Main Content Area */
+.mypage-content {
+    flex-grow: 1;
+    background-color: #fff;
+    padding: 30px;
+    border-radius: 10px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+}
+
+.mypage-content h3 {
+    color: #2c3e50;
+    margin-bottom: 25px;
+    font-size: 1.8em;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 10px;
+}
+
+/* Profile Details Card */
+.profile-details-card {
+    background-color: #fdfdfd;
+    border: 1px solid #e0e0e0;
+    border-radius: 10px;
+    padding: 30px;
+    margin-bottom: 20px;
+    text-align: center;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.04);
+}
+
+.profile-details-card p {
+    font-size: 1.1em;
+    margin-bottom: 10px;
+    color: #444;
+}
+
+.profile-details-card strong {
+    color: #222;
+}
+
+.profile-image-display {
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    object-fit: cover;
+    margin-bottom: 20px;
+    border: 4px solid #007bff;
+    box-shadow: 0 0 15px rgba(0, 123, 255, 0.2);
+}
+
+/* Action Buttons */
+.action-button {
+    padding: 12px 25px;
+    border: none;
+    border-radius: 8px;
+    font-size: 1.05em;
+    cursor: pointer;
+    transition: background-color 0.3s ease, transform 0.2s ease;
+    margin: 5px;
+    font-weight: 600;
+}
+
+.action-button.primary {
+    background-color: #007bff;
+    color: white;
+}
+
+.action-button.primary:hover {
+    background-color: #0056b3;
+    transform: translateY(-2px);
+}
+
+.action-button.secondary {
+    background-color: #6c757d;
+    color: white;
+}
+
+.action-button.secondary:hover {
+    background-color: #5a6268;
+    transform: translateY(-2px);
+}
+
+.action-button.danger {
+    background-color: #dc3545;
+    color: white;
+}
+
+.action-button.danger:hover {
+    background-color: #c82333;
+    transform: translateY(-2px);
+}
+
+.action-button.warning {
+    background-color: #ffc107;
+    color: #333;
+}
+
+.action-button.warning:hover {
+    background-color: #e0a800;
+    transform: translateY(-2px);
+}
+
+.action-button.success {
+    background-color: #28a745;
+    color: white;
+}
+
+.action-button.success:hover {
+    background-color: #218838;
+    transform: translateY(-2px);
+}
+
+.action-button.small {
+    padding: 8px 15px;
+    font-size: 0.9em;
+    margin: 3px;
+}
+
+/* Messages */
+.center-message {
+    text-align: center;
+    font-size: 1.3em;
+    color: #666;
+    padding: 50px;
+}
+
+.error-message {
+    color: #dc3545;
+    font-weight: bold;
+}
+
+/* Transaction History and Product Management Specifics */
+.section-content h4 {
+    color: #34495e;
+    margin-top: 30px;
+    margin-bottom: 15px;
+    font-size: 1.4em;
+}
+
+.section-content ul {
+    list-style: none;
+    padding: 0;
+}
+
+.section-content ul li {
+    background-color: #f9f9f9;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    padding: 15px 20px;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+}
+
+.section-content ul li strong {
+    margin-right: 10px;
+}
+
+.product-item-card {
+    background-color: #fdfdfd;
+    border: 1px solid #e0e0e0;
+    border-radius: 10px;
+    padding: 20px;
+    margin-top: 15px;
+    box-shadow: 0 1px 8px rgba(0, 0, 0, 0.03);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.product-item-card h4 {
+    margin: 0;
+    font-size: 1.2em;
+    color: #333;
+}
+
+.product-item-card p {
+    margin: 0 15px 0 0;
+    color: #666;
+    flex-grow: 1;
+}
+
+/* Settings List */
+.settings-list {
+    list-style: none;
+    padding: 0;
+}
+
+.settings-list li {
+    margin-bottom: 10px;
+}
+
+.setting-item-button {
+    width: 100%;
+    padding: 15px 20px;
+    background-color: #f0f2f5;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    text-align: left;
+    font-size: 1.1em;
+    color: #333;
+    cursor: pointer;
+    transition: background-color 0.3s ease, border-color 0.3s ease;
+}
+
+.setting-item-button:hover {
+    background-color: #e2e6ea;
+    border-color: #c9d2da;
+}
