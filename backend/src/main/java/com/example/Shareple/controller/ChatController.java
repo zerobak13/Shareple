@@ -1,9 +1,10 @@
 package com.example.Shareple.controller;
 import com.example.Shareple.entity.ChatMessageEntity;
-
+import com.example.Shareple.repository.ProductRepository;
 import org.springframework.http.ResponseEntity;
 import com.example.Shareple.entity.ChatRoom;
 import com.example.Shareple.repository.ChatRoomRepository;
+import com.example.Shareple.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.core.user.OAuth2User;
@@ -13,6 +14,11 @@ import java.util.List;
 import com.example.Shareple.repository.ChatMessageRepository; // import 먼저
 import com.example.Shareple.dto.ChatRoomResponseDto;
 import com.example.Shareple.service.ChatService;
+import java.util.Map;
+import com.example.Shareple.entity.Product;
+import com.example.Shareple.entity.User;
+import java.util.HashMap;
+
 
 
 import java.util.Optional;
@@ -25,6 +31,10 @@ public class ChatController {
     private final ChatRoomRepository chatRoomRepository;
     private final ChatMessageRepository chatMessageRepository;
     private final ChatService chatService;
+
+    private final ProductRepository productRepository;
+    private final UserRepository userRepository;
+
     @PostMapping("/create")
     public ChatRoom createChatRoom(@AuthenticationPrincipal OAuth2User user,
                                    @RequestBody ChatRoomRequestDto requestDto) {
@@ -75,6 +85,41 @@ public class ChatController {
         List<ChatRoomResponseDto> rooms = chatService.getMyChatRooms(myKakaoId);
         return ResponseEntity.ok(rooms);
     }
+
+    // ✅ 방 메타 조회 API
+    @GetMapping("/rooms/{roomId}")
+    public ResponseEntity<Map<String, Object>> getRoomMeta(
+            @PathVariable Long roomId,
+            @AuthenticationPrincipal OAuth2User me
+    ) {
+        ChatRoom room = chatRoomRepository.findById(roomId)
+                .orElseThrow(() -> new RuntimeException("채팅방 없음"));
+
+        Product product = productRepository.findById(room.getProductId())
+                .orElseThrow(() -> new RuntimeException("상품 없음"));
+
+        // 방의 두 참여자
+        String senderKakaoId = room.getSenderKakaoId();
+        String receiverKakaoId = room.getReceiverKakaoId();
+
+        // 상품 등록자(주인) = product.kakaoId
+        String ownerKakaoId = product.getKakaoId();
+        String otherKakaoId = ownerKakaoId.equals(senderKakaoId) ? receiverKakaoId : senderKakaoId;
+
+        // (선택) userId도 내려주자: 프론트가 borrowerId로 user PK를 써야 할 때 유용
+        Long ownerUserId = userRepository.findByKakaoId(ownerKakaoId).map(User::getId).orElse(null);
+        Long otherUserId = userRepository.findByKakaoId(otherKakaoId).map(User::getId).orElse(null);
+
+        Map<String, Object> resp = new HashMap<>();
+        resp.put("roomId", roomId);
+        resp.put("productId", product.getId());
+        resp.put("ownerKakaoId", ownerKakaoId);
+        resp.put("otherKakaoId", otherKakaoId);
+        resp.put("ownerUserId", ownerUserId);
+        resp.put("otherUserId", otherUserId);
+        return ResponseEntity.ok(resp);
+    }
+
 
 
 }

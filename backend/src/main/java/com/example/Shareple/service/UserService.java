@@ -1,7 +1,7 @@
 // src/main/java/com/example/Shareple/service/UserService.java
 package com.example.Shareple.service;
 
-import com.example.Shareple.domain.User;
+import com.example.Shareple.entity.User;
 import com.example.Shareple.dto.UserRequestDto;
 import com.example.Shareple.dto.UserResponseDto;
 import com.example.Shareple.repository.UserRepository;

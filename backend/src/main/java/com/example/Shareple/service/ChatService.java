@@ -6,7 +6,7 @@ import com.example.Shareple.repository.ChatRoomRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import com.example.Shareple.dto.ChatRoomResponseDto;
-import com.example.Shareple.domain.User;
+import com.example.Shareple.entity.User;
 import com.example.Shareple.entity.Product;
 
 import java.util.Optional;

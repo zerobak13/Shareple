@@ -1,7 +1,7 @@
 package com.example.Shareple.dto;
 
 import com.example.Shareple.entity.Product;
-import com.example.Shareple.domain.User;
+import com.example.Shareple.entity.User;
 import lombok.Getter;
 
 @Getter
@@ -17,10 +17,12 @@ public class ProductDetailDto {
     private final String location;
     private final String imageUrl;
 
+    // 👇 추가
+    private final String status; // "AVAILABLE" | "RENTED"
+
     private final String sellerNickname;
     private final String sellerEmail;
     private final String sellerKakaoId;
-
 
     public ProductDetailDto(Product product, User user) {
         this.id = product.getId();
@@ -33,9 +35,14 @@ public class ProductDetailDto {
         this.method = product.getMethod();
         this.location = product.getLocation();
         this.imageUrl = product.getImageUrl();
-        this.sellerNickname = user.getNickname();  // ❗ User 클래스 구조에 맞게 수정
-        this.sellerEmail = user.getEmail();        // ❗ User 클래스 구조에 맞게 수정
-        this.sellerKakaoId = user.getKakaoId();
 
+        // 👇 추가: 널 세이프티까지
+        this.status = (product.getStatus() != null)
+                ? product.getStatus().name()
+                : "AVAILABLE";
+
+        this.sellerNickname = user.getNickname();
+        this.sellerEmail = user.getEmail();
+        this.sellerKakaoId = user.getKakaoId();
     }
 }

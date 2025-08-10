@@ -1,5 +1,5 @@
 // src/main/java/com/example/Shareple/domain/User.java
-package com.example.Shareple.domain;
+package com.example.Shareple.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
