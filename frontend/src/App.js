@@ -103,7 +103,7 @@ function App() {
 
                 <Route path="/mypage/products" element={<MyProductManagePage />} /> {/* ✅ 필수 */}
 
-                <Route path="/edit/:id" element={<EditProductPage />} />
+                <Route path="/products/:id/edit" element={<EditProductPage />} />
 
                 <Route path="/" element={<MainPage />} />
                 <Route path="/products/:id" element={<ProductDetailPage />} />

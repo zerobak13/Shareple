@@ -72,8 +72,9 @@ public class ProductController {
         product.setLocation(dto.getLocation());
         product.setImageUrl(imageUrl);
         product.setKakaoId(kakaoId); // ✅ 카카오 ID 저장
-
         productService.saveProduct(product);
+        product.setStatus("대여 가능"); //상품 등록시 상품의 상태 설정
+
 
         return "물품 등록 성공";
     }
@@ -174,6 +175,7 @@ public class ProductController {
             @RequestParam(required = false) Integer minPrice,
             @RequestParam(required = false) Integer maxPrice,
             @RequestParam(required = false) String category
+            
     ) {
         return productService.filterProducts(location, deadline, minPrice, maxPrice, category);
     }

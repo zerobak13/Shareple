@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from '../api/axiosInstance';
+import EditProductPage from './EditProductPage';
 
 const HomePage = () => {
   const [tab, setTab] = useState('profile');
@@ -9,7 +10,10 @@ const HomePage = () => {
   const [productList, setProductList] = useState([]);
   const [rentalFilter, setRentalFilter] = useState('전체');
   const [productFilter, setProductFilter] = useState('전체');
+  const [editingProductId, setEditingProductId] = useState(null);
+
   const navigate = useNavigate();
+  
 
   useEffect(() => {
   const fetchUserData = async () => {
@@ -21,7 +25,7 @@ const HomePage = () => {
       console.log('✅ 내 상품:', productRes.data); // 여기 추가
       setProductList(productRes.data);
     } catch (err) {
-      console.error('❌ 내 상품 조회 실패:', err);
+      console.error('❌ 내 상품 조회 실패:', err);  
     }
   };
 
@@ -66,26 +70,27 @@ const HomePage = () => {
   );
 
   const ProductCard = ({ product }) => (
-    <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 mb-4">
-      <div className="font-semibold text-base mb-1">{product.name}</div>
-      <div className="text-sm text-gray-500">카테고리: {product.category}</div>
-      <div className="text-sm text-gray-500">{product.description}</div>
-      <div className="flex justify-between items-center mt-2">
-        <span className={`text-sm font-semibold ${product.status === '대여중' ? 'text-blue-500' : 'text-green-500'}`}>{product.status}</span>
-        <span className="text-base font-bold">{product.price.toLocaleString()}원/일</span>
-      </div>
-      <div className="mt-3 flex gap-2">
-        <button
-          className={`px-3 py-1 text-sm rounded-md ${product.status === '대여 가능' ? 'bg-[#00C7BE] text-white' : 'bg-gray-300 text-white cursor-not-allowed'}`}
-          disabled={product.status !== '대여 가능'}
-          onClick={() => navigate(`/products/${product.id}/edit`)}
-        >
-          정보 수정
-        </button>
-        <button className="px-3 py-1 border border-red-500 text-red-500 text-sm rounded-md">삭제</button>
-      </div>
+  <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 mb-4">
+    <div className="font-semibold text-base mb-1">{product.name}</div>
+    <div className="text-sm text-gray-500">카테고리: {product.category}</div>
+    <div className="text-sm text-gray-500">{product.description}</div>
+    <div className="flex justify-between items-center mt-2">
+      <span className={`text-sm font-semibold ${product.status === '대여중' ? 'text-blue-500' : 'text-green-500'}`}>{product.status}</span>
+      <span className="text-base font-bold">{product.price.toLocaleString()}원/일</span>
     </div>
-  );
+    <div className="mt-3 flex gap-2">
+      <button
+        className={`px-3 py-1 text-sm rounded-md ${product.status === '대여 가능' ? 'bg-[#00C7BE] text-white' : 'bg-gray-300 text-white cursor-not-allowed'}`}
+        disabled={product.status !== '대여 가능'}
+        onClick={() => setEditingProductId(product.id)}
+      >
+        정보 수정
+      </button>
+      <button className="px-3 py-1 border border-red-500 text-red-500 text-sm rounded-md">삭제</button>
+    </div>
+  </div>
+);
+
 
   if (!user) return <div className="text-center mt-10">로딩 중...</div>;
 
@@ -207,7 +212,17 @@ const HomePage = () => {
           ))}
         </div>
       )}
+
+      {editingProductId && (
+        <EditProductPage
+          productId={editingProductId}
+          onClose={() => setEditingProductId(null)}
+        />
+      )}
+
+      
     </div>
+    
   );
 };
 
