@@ -4,19 +4,29 @@ import { useNavigate } from 'react-router-dom';
 function CompleteProfilePage() {
     const [user, setUser] = useState(null);
     const [form, setForm] = useState({
-        email: '',
-        name: '',
+        nickname: '', // 사용자가 입력하는 별명
         phone: '',
         address: '',
-        profileImageUrl: ''
+        profileImageUrl: '',
+        email: ''
     });
     const [file, setFile] = useState(null);
     const navigate = useNavigate();
 
+    // 사용자 정보 로드
     useEffect(() => {
         fetch('/api/auth/me', { credentials: 'include' })
             .then(res => res.json())
-            .then(data => setUser(data));
+            .then(data => {
+                setUser(data);
+                setForm({
+                    nickname: data.nickname || '',      // 사용자가 수정할 별명
+                    phone: data.phone || '',
+                    address: data.address || '',
+                    profileImageUrl: data.profileImageUrl || '',
+                    email: data.email || ''
+                });
+            });
     }, []);
 
     const handleChange = (e) => {
@@ -29,7 +39,7 @@ function CompleteProfilePage() {
 
     const handleSubmit = async () => {
         try {
-            let imageUrl = '';
+            let imageUrl = form.profileImageUrl;
 
             if (file) {
                 const formData = new FormData();
@@ -40,8 +50,7 @@ function CompleteProfilePage() {
                     body: formData,
                 });
 
-                const path = await res.text();
-                imageUrl = path;
+                imageUrl = await res.text();
             }
 
             await fetch(`/api/users/${user.id}`, {
@@ -50,8 +59,11 @@ function CompleteProfilePage() {
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
-                    ...user,
-                    ...form,
+                    nickname: form.nickname,
+                    email: form.email,
+                    name: user.name, // 카카오에서 받은 이름은 그대로 유지
+                    phone: form.phone,
+                    address: form.address,
                     profileImageUrl: imageUrl,
                 }),
             });
@@ -69,11 +81,44 @@ function CompleteProfilePage() {
     return (
         <div style={{ maxWidth: '400px', margin: '2rem auto' }}>
             <h2>추가 정보 입력</h2>
-            <input name="email" placeholder="이메일" onChange={handleChange} /><br/>
-            <input name="name" placeholder="이름" onChange={handleChange} /><br/>
-            <input name="phone" placeholder="전화번호" onChange={handleChange} /><br/>
-            <input name="address" placeholder="주소" onChange={handleChange} /><br/>
-            <input type="file" accept="image/*" onChange={handleFileChange} /><br/>
+
+            <div>카카오 이름: {user.name}</div>
+            <div>현재 별명: {form.nickname}</div>
+
+            <input
+                name="nickname"
+                placeholder="별명 (닉네임)"
+                value={form.nickname}
+                onChange={handleChange}
+            /><br />
+
+            <input
+                name="email"
+                placeholder="이메일"
+                value={form.email}
+                onChange={handleChange}
+            /><br />
+
+            <input
+                name="phone"
+                placeholder="전화번호"
+                value={form.phone}
+                onChange={handleChange}
+            /><br />
+
+            <input
+                name="address"
+                placeholder="주소"
+                value={form.address}
+                onChange={handleChange}
+            /><br />
+
+            <input
+                type="file"
+                accept="image/*"
+                onChange={handleFileChange}
+            /><br />
+
             <button onClick={handleSubmit}>제출</button>
         </div>
     );
