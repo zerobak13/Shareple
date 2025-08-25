@@ -12,23 +12,22 @@ const HomePage = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    const fetchUserData = async () => {
-      try {
-        const userRes = await axios.get('/api/auth/me');
-        setUser(userRes.data);
+  const fetchUserData = async () => {
+    try {
+      const userRes = await axios.get('/api/auth/me');
+      setUser(userRes.data);
 
-        const rentalRes = await axios.get('/api/rentals/mine');
-        setRentalHistory(rentalRes.data);
+      const productRes = await axios.get('/api/products/my');
+      console.log('✅ 내 상품:', productRes.data); // 여기 추가
+      setProductList(productRes.data);
+    } catch (err) {
+      console.error('❌ 내 상품 조회 실패:', err);
+    }
+  };
 
-        const productRes = await axios.get('/api/products/mine');
-        setProductList(productRes.data);
-      } catch (err) {
-        console.error('Error fetching data:', err);
-      }
-    };
+  fetchUserData();
+}, []);
 
-    fetchUserData();
-  }, []);
 
   const TabButton = ({ id, label }) => (
     <button
