@@ -25,4 +25,5 @@ public class Product {
     private String method;
     private String location;
     private String imageUrl; //  이미지 파일 경로
+    private String status;
 }
