@@ -7,7 +7,9 @@ import {
     Navigate,
 } from 'react-router-dom';
 
-import HomePage from './pages/HomePage';
+// NOTE: 기존 /profile 라우트에서 사용하던 HomePage 는 /mypage 로 대체되어
+//       더 이상 App 라우트에서 사용하지 않습니다. 파일은 참고용으로 보존됩니다.
+// import HomePage from './pages/HomePage';
 import LoginPage from './pages/LoginPage';
 import MainPage from './pages/MainPage';
 import CompleteProfilePage from './pages/CompleteProfilePage';
@@ -19,7 +21,19 @@ import ChatRoomPage from './pages/ChatRoomPage';
 import MyChatRoomsPage from './pages/MyChatRoomsPage';
 import SearchPage from './pages/SearchPage';
 
+// 마이페이지 컨테이너 + 서브 페이지
+import MyPage from './pages/MyPage';
+import MyPageHome from './pages/mypage/MyPageHome';
+import ProfileEditPage from './pages/mypage/ProfileEditPage';
+import AccountEditPage from './pages/mypage/AccountEditPage';
+import RentalHistoryPage from './pages/mypage/RentalHistoryPage';
+import ReturnHistoryPage from './pages/mypage/ReturnHistoryPage';
+import ReviewHistoryPage from './pages/mypage/ReviewHistoryPage';
+import SupportPage from './pages/mypage/SupportPage';
+import SettingsPage from './pages/mypage/SettingsPage';
 
+// 관리자 페이지
+import AdminInquiriesPage from './pages/admin/AdminInquiriesPage';
 
 import Navbar from './components/Navbar';
 
@@ -77,13 +91,8 @@ function App() {
                     }
                 />
 
-                {/* 마이페이지(프로필) */}
-                <Route
-                    path="/profile"
-                    element={
-                        user ? <HomePage user={user} /> : <Navigate to="/login" replace />
-                    }
-                />
+                {/* 레거시 /profile → /mypage 로 리다이렉트 */}
+                <Route path="/profile" element={<Navigate to="/mypage" replace />} />
 
                 {/* 메인페이지 직접 접근 */}
                 <Route
@@ -101,15 +110,34 @@ function App() {
                     }
                 />
 
-                <Route path="/mypage/products" element={<MyProductManagePage />} /> {/* ✅ 필수 */}
+                {/* 마이페이지 (중첩 라우팅) */}
+                <Route
+                    path="/mypage"
+                    element={user ? <MyPage /> : <Navigate to="/login" replace />}
+                >
+                    <Route index element={<MyPageHome />} />
+                    <Route path="profile" element={<ProfileEditPage />} />
+                    <Route path="account" element={<AccountEditPage />} />
+                    <Route path="rentals" element={<RentalHistoryPage />} />
+                    <Route path="returns" element={<ReturnHistoryPage />} />
+                    <Route path="products" element={<MyProductManagePage />} />
+                    <Route path="reviews" element={<ReviewHistoryPage />} />
+                    <Route path="support" element={<SupportPage />} />
+                    <Route path="settings" element={<SettingsPage />} />
+                </Route>
 
                 <Route path="/edit/:id" element={<EditProductPage />} />
 
-                <Route path="/" element={<MainPage />} />
                 <Route path="/products/:id" element={<ProductDetailPage />} />
                 <Route path="/chat/:roomId" element={<ChatRoomPage />} />
                 <Route path="/chat-rooms" element={<MyChatRoomsPage />} />
                 <Route path="/search" element={<SearchPage />} />
+
+                {/* 관리자 전용 — 실제 권한 체크는 백엔드 + 페이지 내부에서 수행 */}
+                <Route
+                    path="/admin/inquiries"
+                    element={user ? <AdminInquiriesPage /> : <Navigate to="/login" replace />}
+                />
 
                 {/* 404 처리 */}
                 <Route

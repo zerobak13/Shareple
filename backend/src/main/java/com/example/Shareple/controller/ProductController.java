@@ -10,6 +10,7 @@ import org.springframework.web.multipart.MultipartFile;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.http.ResponseEntity;
+import com.example.Shareple.dto.ProductListDto;
 
 import java.io.File;
 import java.io.IOException;
@@ -22,7 +23,7 @@ import com.example.Shareple.entity.Product;
 import java.util.List;
 import com.example.Shareple.repository.UserRepository;
 import com.example.Shareple.dto.ProductDetailDto;
-import com.example.Shareple.domain.User;
+import com.example.Shareple.entity.User;
 
 
 @RestController
@@ -154,8 +155,10 @@ public class ProductController {
 
     // 모든 사용자의 물품을 최신순으로 조회
     @GetMapping("/all")
-    public List<Product> getAllProducts() {
-        return productService.findAllProducts();
+    public List<ProductListDto> getAllProducts() {
+        return productService.findAllProducts().stream()
+                .map(ProductListDto::new)
+                .toList();
     }
 
     @GetMapping("/{id}")

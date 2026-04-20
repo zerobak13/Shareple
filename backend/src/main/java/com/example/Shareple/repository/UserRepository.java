@@ -1,7 +1,7 @@
 // src/main/java/com/example/Shareple/repository/UserRepository.java
 package com.example.Shareple.repository;
 
-import com.example.Shareple.domain.User;
+import com.example.Shareple.entity.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.Optional;
