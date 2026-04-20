@@ -26,6 +26,10 @@ public class ChatMessageEntity {
     @Column(columnDefinition = "TEXT")
     private String content;             // 사람이 읽을 요약/일반 채팅 텍스트
 
+    // 사진 메시지일 경우 업로드된 이미지 URL (/uploads/...). 텍스트만이면 null
+    @Column(name = "image_url", length = 500)
+    private String imageUrl;
+
     private LocalDateTime timestamp;
 
     // USER | SYSTEM  (DB에 이미 type 컬럼이 있으면 이름을 바꾸지 마세요)

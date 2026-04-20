@@ -30,6 +30,7 @@ public class WebSocketChatController {
                 .roomId(roomId)
                 .senderKakaoId(message.getSenderKakaoId())
                 .content(message.getContent())
+                .imageUrl(message.getImageUrl()) // 사진 메시지 지원
                 .timestamp(now)
                 .build();
         chatMessageRepository.save(entity);
@@ -39,7 +40,8 @@ public class WebSocketChatController {
         response.setRoomId(roomId);
         response.setSenderKakaoId(message.getSenderKakaoId());  // ✅ 필드명 일치
         response.setContent(message.getContent());
-        response.setTimestamp(now);  // ✅ 시간 포함
+        response.setImageUrl(message.getImageUrl());             // ✅ 이미지 URL 전달
+        response.setTimestamp(now);                              // ✅ 시간 포함
 
         // WebSocket 전송
         messagingTemplate.convertAndSend("/topic/chat/" + roomId, response);

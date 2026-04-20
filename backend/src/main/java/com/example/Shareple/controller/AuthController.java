@@ -35,6 +35,7 @@ public class AuthController {
                         .name(user.getName())
                         .phone(user.getPhone())
                         .address(user.getAddress())
+                        .role(user.getRole() != null ? user.getRole().name() : "USER")
                         .build()
                 )
                 .orElse(null);

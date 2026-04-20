@@ -44,12 +44,24 @@ const Navbar = () => {
             {!user && <Link to="/login" style={{ textDecoration: 'none', color: '#333' }}>Login</Link>}
             {user && (
                 <>
-                    <Link to="/profile" style={{ textDecoration: 'none', color: '#333' }}>
+                    <Link to="/mypage" style={{ textDecoration: 'none', color: '#333' }}>
                         {user.nickname || user.email}
                     </Link>
                     <Link to="/product/register" style={{ textDecoration: 'none', color: '#333' }}>
                         물품 등록
                     </Link>
+                    {user.role === 'ADMIN' && (
+                        <Link
+                            to="/admin/inquiries"
+                            style={{
+                                textDecoration: 'none',
+                                color: '#00C7BE',
+                                fontWeight: 600,
+                            }}
+                        >
+                            🛠️ 관리자
+                        </Link>
+                    )}
                     <button onClick={handleLogout}>Logout</button>
                 </>
             )}

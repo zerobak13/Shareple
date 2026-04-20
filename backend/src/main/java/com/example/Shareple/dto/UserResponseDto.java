@@ -16,4 +16,6 @@ public class UserResponseDto {
     private String name;
     private String phone;
     private String address;
+    /** USER | ADMIN */
+    private String role;
 }

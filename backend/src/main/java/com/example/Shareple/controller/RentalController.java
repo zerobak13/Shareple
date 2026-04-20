@@ -2,7 +2,11 @@ package com.example.Shareple.controller;
 import com.example.Shareple.repository.RentalRepository;
 import com.example.Shareple.entity.Rental;
 import com.example.Shareple.entity.RentalStatus;
+import com.example.Shareple.dto.RentalListItemDto;
+import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
+import java.util.Arrays;
+import java.util.stream.Collectors;
 import java.util.HashMap;
 
 import com.example.Shareple.service.RentalService;
@@ -70,6 +74,49 @@ public class RentalController {
         rentalService.complete(id, userId);
     }
 
+
+    /**
+     * 내 대여/반납 내역 목록.
+     *   role   : BORROWER(기본) | OWNER
+     *   status : 쉼표 구분. 미지정 시 전체. 예) ACTIVE,COMPLETED
+     */
+    @GetMapping("/my")
+    @Transactional(readOnly = true)
+    public List<RentalListItemDto> myRentals(
+            @AuthenticationPrincipal org.springframework.security.oauth2.core.user.OAuth2User me,
+            @RequestParam(defaultValue = "BORROWER") String role,
+            @RequestParam(required = false) String status
+    ) {
+        String kakaoId = me.getAttribute("id").toString();
+        Long myId = userRepository.findByKakaoId(kakaoId)
+                .orElseThrow(() -> new IllegalArgumentException("사용자 없음"))
+                .getId();
+
+        List<RentalStatus> statuses = null;
+        if (status != null && !status.isBlank()) {
+            statuses = Arrays.stream(status.split(","))
+                    .map(String::trim).filter(s -> !s.isEmpty())
+                    .map(RentalStatus::valueOf)
+                    .collect(Collectors.toList());
+        }
+
+        boolean asOwner = "OWNER".equalsIgnoreCase(role);
+        List<Rental> rentals;
+        if (asOwner) {
+            rentals = (statuses == null)
+                    ? rentalRepository.findByOwnerIdOrderByIdDesc(myId)
+                    : rentalRepository.findByOwnerIdAndStatusInOrderByIdDesc(myId, statuses);
+        } else {
+            rentals = (statuses == null)
+                    ? rentalRepository.findByBorrowerIdOrderByIdDesc(myId)
+                    : rentalRepository.findByBorrowerIdAndStatusInOrderByIdDesc(myId, statuses);
+        }
+
+        String myRole = asOwner ? "OWNER" : "BORROWER";
+        return rentals.stream()
+                .map(r -> RentalListItemDto.from(r, myRole))
+                .collect(Collectors.toList());
+    }
 
     // RentalController.java
     @GetMapping("/room/{roomId}/current")

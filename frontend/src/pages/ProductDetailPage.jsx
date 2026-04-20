@@ -1,11 +1,32 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from '../api/axiosInstance';
+import StarRating from '../components/StarRating';
+
+const resolveImg = (url) => {
+    if (!url) return null;
+    if (url.startsWith('http')) return url;
+    if (url.startsWith('/uploads')) return url;
+    return `/uploads/${url.replace(/^\/+/, '')}`;
+};
+
+const formatDate = (iso) => {
+    if (!iso) return '';
+    const d = new Date(iso);
+    if (Number.isNaN(d.getTime())) return '';
+    return d.toLocaleDateString('ko-KR', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+    });
+};
 
 const ProductDetailPage = () => {
     const { id } = useParams();
     const [product, setProduct] = useState(null);
     const [currentUser, setCurrentUser] = useState(null);
+    const [summary, setSummary] = useState(null);
+    const [reviews, setReviews] = useState([]);
     const navigate = useNavigate();
 
     useEffect(() => {
@@ -19,6 +40,16 @@ const ProductDetailPage = () => {
             .then(res => setCurrentUser(res.data))
             .catch(err => console.error('유저 정보 불러오기 실패', err));
     }, []);
+
+    useEffect(() => {
+        if (!id) return;
+        axios.get(`/api/reviews/product/${id}/summary`)
+            .then(res => setSummary(res.data))
+            .catch(() => setSummary(null));
+        axios.get(`/api/reviews/product/${id}`)
+            .then(res => setReviews(Array.isArray(res.data) ? res.data : []))
+            .catch(() => setReviews([]));
+    }, [id]);
 
     if (!product || !currentUser) return <div className="p-8">불러오는 중...</div>;
 
@@ -46,6 +77,18 @@ const ProductDetailPage = () => {
                     <div className="text-sm text-gray-500">
                         <p><strong>판매자:</strong> {product.sellerNickname}</p>
                         <p><strong>이메일:</strong> {product.sellerEmail}</p>
+                        {summary && summary.count > 0 && (
+                            <div className="mt-1 flex items-center gap-2">
+                                <strong>평점:</strong>
+                                <StarRating
+                                    value={summary.average}
+                                    readOnly
+                                    showNumber
+                                    count={summary.count}
+                                    size="sm"
+                                />
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>
@@ -81,6 +124,64 @@ const ProductDetailPage = () => {
                     </button>
                 )}
             </div>
+
+            {/* 리뷰 섹션 */}
+            <section className="mt-10 pt-6 border-t">
+                <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-bold">후기</h3>
+                    {summary && (
+                        <StarRating
+                            value={summary.average}
+                            readOnly
+                            showNumber
+                            count={summary.count}
+                            size="sm"
+                        />
+                    )}
+                </div>
+                {reviews.length === 0 ? (
+                    <div className="text-center text-gray-400 py-10 border-2 border-dashed rounded-xl">
+                        아직 이 상품에 대한 후기가 없습니다.
+                    </div>
+                ) : (
+                    <ul className="space-y-3">
+                        {reviews.map((r) => {
+                            const profileImg = resolveImg(r.reviewerProfileImageUrl);
+                            return (
+                                <li key={r.id} className="p-4 border rounded-xl">
+                                    <div className="flex items-start gap-3">
+                                        <div className="w-10 h-10 rounded-full overflow-hidden bg-gray-200 flex items-center justify-center flex-shrink-0">
+                                            {profileImg ? (
+                                                <img src={profileImg} alt="" className="w-full h-full object-cover" />
+                                            ) : (
+                                                <span className="text-sm">
+                                                    {(r.reviewerNickname || '?')[0]}
+                                                </span>
+                                            )}
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                            <div className="flex items-center justify-between gap-2">
+                                                <span className="font-semibold text-sm">
+                                                    {r.reviewerNickname || '익명'}
+                                                </span>
+                                                <span className="text-xs text-gray-400">
+                                                    {formatDate(r.createdAt)}
+                                                </span>
+                                            </div>
+                                            <StarRating value={r.rating} readOnly size="sm" />
+                                            {r.content && (
+                                                <p className="mt-2 text-sm text-gray-700 whitespace-pre-wrap">
+                                                    {r.content}
+                                                </p>
+                                            )}
+                                        </div>
+                                    </div>
+                                </li>
+                            );
+                        })}
+                    </ul>
+                )}
+            </section>
         </div>
     );
 };
