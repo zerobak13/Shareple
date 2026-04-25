@@ -1,51 +1,92 @@
-import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+// src/pages/SearchPage.jsx
+// 물품 검색 — 지역/카테고리/가격/마감일 필터 + URL ?q= 동기화.
+import React, { useEffect, useMemo, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import axios from '../api/axiosInstance';
+import ProductCard from '../components/ProductCard';
+import EmptyState from '../components/EmptyState';
+import { LoadingBlock } from '../components/Spinner';
 
-const MainPage = () => {
-    const [products, setProducts] = useState([]);
+const DISTRICTS = [
+    '강남구', '강동구', '강북구', '강서구', '관악구', '광진구', '구로구', '금천구',
+    '노원구', '도봉구', '동대문구', '동작구', '마포구', '서대문구', '서초구',
+    '성동구', '성북구', '송파구', '양천구', '영등포구', '용산구', '은평구',
+    '종로구', '중구', '중랑구',
+];
+const CATEGORIES = ['전자기기', '생활용품', '여행용품', '게임', '서적', '의류', '악세서리'];
+
+const SearchPage = () => {
+    const [searchParams, setSearchParams] = useSearchParams();
+    const qParam = searchParams.get('q') || '';
+
+    const [keyword, setKeyword] = useState(qParam);
     const [filters, setFilters] = useState({
         location: '',
         deadline: '',
         minPrice: '',
         maxPrice: '',
-        category: ''
+        category: '',
     });
-    const navigate = useNavigate();
+    const [products, setProducts] = useState([]);
+    const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        fetchAllProducts();
-    }, []);
+        setKeyword(qParam);
+    }, [qParam]);
 
-    const fetchAllProducts = async () => {
-        try {
-            const res = await axios.get('/api/products/all');
-            setProducts(res.data);
-        } catch (err) {
-            console.error(err);
-        }
-    };
-
-    const fetchFilteredProducts = async () => {
+    const load = async () => {
+        setLoading(true);
         try {
             const params = new URLSearchParams();
-
             if (filters.location) params.append('location', filters.location);
             if (filters.deadline) params.append('deadline', filters.deadline);
             if (filters.minPrice) params.append('minPrice', filters.minPrice);
             if (filters.maxPrice) params.append('maxPrice', filters.maxPrice);
             if (filters.category) params.append('category', filters.category);
 
-            const res = await axios.get(`/api/products/filter?${params.toString()}`);
-            setProducts(res.data);
-        } catch (err) {
-            console.error('필터링 실패:', err);
+            const hasFilter = Array.from(params.keys()).length > 0;
+            const url = hasFilter
+                ? `/api/products/filter?${params.toString()}`
+                : '/api/products/all';
+            const res = await axios.get(url);
+            setProducts(Array.isArray(res.data) ? res.data : []);
+        } catch (e) {
+            console.error('상품 불러오기 실패', e);
+            setProducts([]);
+        } finally {
+            setLoading(false);
         }
     };
 
-    const handleChange = e => {
-        const { name, value } = e.target;
-        setFilters(prev => ({ ...prev, [name]: value }));
+    useEffect(() => {
+        load();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
+    const filteredByKeyword = useMemo(() => {
+        const q = keyword.trim().toLowerCase();
+        if (!q) return products;
+        return products.filter((p) => {
+            const name = String(p.name || '').toLowerCase();
+            const desc = String(p.description || '').toLowerCase();
+            const cat = String(p.category || '').toLowerCase();
+            const loc = String(p.location || '').toLowerCase();
+            return (
+                name.includes(q) ||
+                desc.includes(q) ||
+                cat.includes(q) ||
+                loc.includes(q)
+            );
+        });
+    }, [products, keyword]);
+
+    const handleChange = (e) =>
+        setFilters((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+
+    const onSearchSubmit = (e) => {
+        e.preventDefault();
+        const k = keyword.trim();
+        setSearchParams(k ? { q: k } : {});
     };
 
     const handleReset = () => {
@@ -54,113 +95,145 @@ const MainPage = () => {
             deadline: '',
             minPrice: '',
             maxPrice: '',
-            category: ''
+            category: '',
         });
-        fetchAllProducts();
+        setKeyword('');
+        setSearchParams({});
+        setTimeout(load, 0);
     };
 
     return (
-        <div>
-            <h2>물품 검색</h2>
-            <div style={{ marginBottom: '1rem' }}>
-                {/* 지역 선택 필드 */}
-                <select
-                    name="location"
-                    value={filters.location}
-                    onChange={handleChange}
+        <div className="max-w-6xl mx-auto px-4 py-6">
+            {/* 타이틀 + 검색 입력 */}
+            <div className="mb-6">
+                <h1 className="text-2xl font-extrabold mb-3">물품 검색</h1>
+                <form
+                    onSubmit={onSearchSubmit}
+                    className="flex items-center bg-gray-100 rounded-full px-4 h-12 focus-within:bg-white focus-within:ring-2 focus-within:ring-primary/30 transition"
                 >
-                    <option value="">직거래 장소 선택</option>
-                    {/* 서울시 25개 구 */}
-                    <option value="강남구">강남구</option>
-                    <option value="강동구">강동구</option>
-                    <option value="강북구">강북구</option>
-                    <option value="강서구">강서구</option>
-                    <option value="관악구">관악구</option>
-                    <option value="광진구">광진구</option>
-                    <option value="구로구">구로구</option>
-                    <option value="금천구">금천구</option>
-                    <option value="노원구">노원구</option>
-                    <option value="도봉구">도봉구</option>
-                    <option value="동대문구">동대문구</option>
-                    <option value="동작구">동작구</option>
-                    <option value="마포구">마포구</option>
-                    <option value="서대문구">서대문구</option>
-                    <option value="서초구">서초구</option>
-                    <option value="성동구">성동구</option>
-                    <option value="성북구">성북구</option>
-                    <option value="송파구">송파구</option>
-                    <option value="양천구">양천구</option>
-                    <option value="영등포구">영등포구</option>
-                    <option value="용산구">용산구</option>
-                    <option value="은평구">은평구</option>
-                    <option value="종로구">종로구</option>
-                    <option value="중구">중구</option>
-                    <option value="중랑구">중랑구</option>
-                </select>
-
-                <input
-                    type="date"
-                    name="deadline"
-                    value={filters.deadline}
-                    onChange={handleChange}
-                />
-                <input
-                    type="number"
-                    name="minPrice"
-                    placeholder="최소 가격"
-                    value={filters.minPrice}
-                    onChange={handleChange}
-                />
-                <input
-                    type="number"
-                    name="maxPrice"
-                    placeholder="최대 가격"
-                    value={filters.maxPrice}
-                    onChange={handleChange}
-                />
-                <select
-                    name="category"
-                    value={filters.category}
-                    onChange={handleChange}
-                >
-                    <option value="">카테고리 선택</option>
-                    <option value="게임">게임</option>
-                    <option value="서적">서적</option>
-                    <option value="의류">의류</option>
-                    <option value="악세서리">악세서리</option>
-                    <option value="전자기기">전자기기</option>
-                    <option value="여행용품">여행용품</option>
-                    <option value="생활용품">생활용품</option>
-
-                </select>
-                <button onClick={fetchFilteredProducts}>필터 적용</button>
-                <button onClick={handleReset}>초기화</button>
+                    <span className="text-gray-400 mr-2">🔎</span>
+                    <input
+                        value={keyword}
+                        onChange={(e) => setKeyword(e.target.value)}
+                        placeholder="상품명 · 카테고리 · 지역으로 검색"
+                        className="flex-1 bg-transparent outline-none text-sm placeholder:text-gray-400"
+                    />
+                    {keyword && (
+                        <button
+                            type="button"
+                            onClick={() => setKeyword('')}
+                            className="text-gray-400 text-xs mr-2"
+                        >
+                            ✕
+                        </button>
+                    )}
+                    <button type="submit" className="btn-primary !h-8 !px-4 !py-0 !text-xs">
+                        검색
+                    </button>
+                </form>
             </div>
 
-            <h2>등록된 물품들</h2>
-            <div style={{ display: 'grid', gap: '1rem' }}>
-                {products.map(product => (
-                    <div
-                        key={product.id}
-                        onClick={() => navigate(`/products/${product.id}`)}
-                        style={{
-                            border: '1px solid #ccc',
-                            padding: '1rem',
-                            cursor: 'pointer'
-                        }}
+            {/* 필터 바 */}
+            <div className="card p-4 mb-6 grid grid-cols-2 md:grid-cols-5 gap-3">
+                <div>
+                    <label className="text-xs text-gray-500 block mb-1">지역</label>
+                    <select
+                        name="location"
+                        value={filters.location}
+                        onChange={handleChange}
+                        className="input-base"
                     >
-                        <img
-                            src={`http://localhost:8080${product.imageUrl}`}
-                            alt={product.name}
-                            style={{ width: '100px', height: '100px' }}
-                        />
-                        <h4>{product.name}</h4>
-                        <p>{product.price}원</p>
-                    </div>
-                ))}
+                        <option value="">전체</option>
+                        {DISTRICTS.map((d) => (
+                            <option key={d} value={d}>
+                                {d}
+                            </option>
+                        ))}
+                    </select>
+                </div>
+                <div>
+                    <label className="text-xs text-gray-500 block mb-1">카테고리</label>
+                    <select
+                        name="category"
+                        value={filters.category}
+                        onChange={handleChange}
+                        className="input-base"
+                    >
+                        <option value="">전체</option>
+                        {CATEGORIES.map((c) => (
+                            <option key={c} value={c}>
+                                {c}
+                            </option>
+                        ))}
+                    </select>
+                </div>
+                <div>
+                    <label className="text-xs text-gray-500 block mb-1">대여 마감</label>
+                    <input
+                        type="date"
+                        name="deadline"
+                        value={filters.deadline}
+                        onChange={handleChange}
+                        className="input-base"
+                    />
+                </div>
+                <div>
+                    <label className="text-xs text-gray-500 block mb-1">최소가</label>
+                    <input
+                        type="number"
+                        name="minPrice"
+                        min="0"
+                        placeholder="0"
+                        value={filters.minPrice}
+                        onChange={handleChange}
+                        className="input-base"
+                    />
+                </div>
+                <div>
+                    <label className="text-xs text-gray-500 block mb-1">최대가</label>
+                    <input
+                        type="number"
+                        name="maxPrice"
+                        min="0"
+                        placeholder="∞"
+                        value={filters.maxPrice}
+                        onChange={handleChange}
+                        className="input-base"
+                    />
+                </div>
+                <div className="col-span-2 md:col-span-5 flex gap-2 justify-end">
+                    <button onClick={handleReset} className="btn-secondary">
+                        초기화
+                    </button>
+                    <button onClick={load} className="btn-primary">
+                        필터 적용
+                    </button>
+                </div>
             </div>
+
+            {/* 결과 */}
+            <div className="flex items-end justify-between mb-3">
+                <h2 className="text-base font-bold text-gray-700">검색 결과</h2>
+                <span className="text-xs text-gray-400">총 {filteredByKeyword.length}건</span>
+            </div>
+
+            {loading ? (
+                <LoadingBlock />
+            ) : filteredByKeyword.length === 0 ? (
+                <EmptyState
+                    icon="🔍"
+                    title="조건에 맞는 상품이 없어요"
+                    description={'검색어나 필터를 조정해 보세요.'}
+                />
+            ) : (
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+                    {filteredByKeyword.map((p) => (
+                        <ProductCard key={p.id} product={p} />
+                    ))}
+                </div>
+            )}
         </div>
     );
 };
 
-export default MainPage;
+export default SearchPage;

@@ -1,13 +1,17 @@
 // src/pages/mypage/SettingsPage.jsx
-// 명세서: 마이페이지 > 설정
-//  - 알림 설정: 준비 중
-//  - 언어 설정: 준비 중
-//  - 이용약관 및 정책: 준비 중
-//  - 로그아웃 (버튼): 구현
-//  - 회원 탈퇴 (버튼): 구현 (※ 현재 백엔드 /api/users/{id} DELETE 사용.
-//                                추후 '내 계정 탈퇴' 전용 엔드포인트 + 대여중 물품 존재 시 차단 로직 필요)
+// 설정 — 알림/언어/약관(준비 중) + 로그아웃/회원 탈퇴.
 import React from 'react';
 import axios from '../../api/axiosInstance';
+
+const Row = ({ title, desc, right }) => (
+    <div className="flex items-center justify-between py-4 border-b last:border-b-0">
+        <div>
+            <div className="text-sm font-semibold text-gray-800">{title}</div>
+            {desc && <div className="text-xs text-gray-500 mt-0.5">{desc}</div>}
+        </div>
+        {right}
+    </div>
+);
 
 const SettingsPage = () => {
     const handleLogout = async () => {
@@ -22,7 +26,7 @@ const SettingsPage = () => {
 
     const handleWithdrawal = async () => {
         const ok = window.confirm(
-            '정말로 회원 탈퇴 하시겠습니까?\n탈퇴 시 모든 내역이 삭제됩니다.'
+            '정말로 회원 탈퇴 하시겠어요?\n탈퇴 시 모든 내역이 삭제되며 복구되지 않습니다.'
         );
         if (!ok) return;
 
@@ -30,47 +34,44 @@ const SettingsPage = () => {
             const me = await axios.get('/api/auth/me');
             await axios.delete(`/api/users/${me.data.id}`);
             alert('회원 탈퇴가 완료되었습니다.');
-            // 세션 정리 후 로그인으로
             try {
                 await axios.post('/api/auth/logout');
             } catch (_) {}
             window.location.href = '/login';
         } catch (err) {
             console.error(err);
-            alert('탈퇴 실패');
+            alert('탈퇴 실패: ' + (err?.response?.data?.error || err.message));
         }
     };
 
     return (
         <div className="max-w-lg">
-            <h3 className="text-xl font-bold mb-4">설정</h3>
+            <h3 className="text-xl font-extrabold mb-1">설정</h3>
+            <p className="text-xs text-gray-500 mb-5">알림과 계정 관련 설정이에요.</p>
 
-            <section className="mb-6">
-                <h4 className="font-semibold mb-2">알림 설정</h4>
-                <p className="text-sm text-gray-500">알림 허용 기능은 준비 중입니다.</p>
-            </section>
-
-            <section className="mb-6">
-                <h4 className="font-semibold mb-2">언어 설정</h4>
-                <p className="text-sm text-gray-500">한국어 (변경 기능 준비 중)</p>
-            </section>
-
-            <section className="mb-6">
-                <h4 className="font-semibold mb-2">이용약관 및 정책</h4>
-                <p className="text-sm text-gray-500">준비 중</p>
-            </section>
+            <div className="card p-1 mb-6">
+                <Row
+                    title="알림 설정"
+                    desc="대여·채팅 알림을 받아볼 수 있어요."
+                    right={<span className="text-xs text-gray-400">준비 중</span>}
+                />
+                <Row
+                    title="언어"
+                    desc="서비스 표시 언어를 바꿀 수 있어요."
+                    right={<span className="text-xs text-gray-400">한국어</span>}
+                />
+                <Row
+                    title="이용약관 및 정책"
+                    desc="서비스 이용과 관련된 정책을 확인할 수 있어요."
+                    right={<span className="text-xs text-gray-400">준비 중</span>}
+                />
+            </div>
 
             <div className="flex flex-col gap-2 pt-4 border-t">
-                <button
-                    onClick={handleLogout}
-                    className="w-full px-4 py-2 rounded-lg border text-gray-700 hover:bg-gray-50"
-                >
+                <button onClick={handleLogout} className="btn-secondary w-full">
                     로그아웃
                 </button>
-                <button
-                    onClick={handleWithdrawal}
-                    className="w-full px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700"
-                >
+                <button onClick={handleWithdrawal} className="btn-danger w-full">
                     회원 탈퇴
                 </button>
             </div>

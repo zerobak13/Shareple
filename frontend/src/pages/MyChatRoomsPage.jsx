@@ -6,6 +6,8 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from '../api/axiosInstance';
+import EmptyState from '../components/EmptyState';
+import { LoadingBlock } from '../components/Spinner';
 
 // 마지막 메시지 시각을 카카오톡 스타일로 포맷
 const formatWhen = (iso) => {
@@ -83,32 +85,42 @@ const MyChatRoomsPage = () => {
 
     return (
         <div className="max-w-3xl mx-auto px-4 py-6">
-            <div className="flex items-center justify-between mb-4">
-                <h2 className="text-2xl font-bold">💬 내 채팅</h2>
-                <span className="text-sm text-gray-500">총 {rooms.length}개</span>
+            <div className="flex items-end justify-between mb-4">
+                <div>
+                    <h2 className="text-2xl font-extrabold">내 채팅</h2>
+                    <p className="text-xs text-gray-500 mt-1">
+                        대여·거래 관련 대화를 이어갈 수 있어요.
+                    </p>
+                </div>
+                <span className="text-xs text-gray-400">총 {rooms.length}개</span>
             </div>
 
             {/* 검색 */}
-            <div className="mb-4">
+            <div className="flex items-center bg-gray-100 rounded-full px-4 h-11 mb-4 focus-within:bg-white focus-within:ring-2 focus-within:ring-primary/30 transition">
+                <span className="text-gray-400 mr-2">🔎</span>
                 <input
                     value={q}
                     onChange={(e) => setQ(e.target.value)}
                     placeholder="상품명 또는 상대 닉네임으로 검색"
-                    className="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary"
+                    className="flex-1 bg-transparent outline-none text-sm placeholder:text-gray-400"
                 />
             </div>
 
             {/* 상태별 뷰 */}
             {loading ? (
-                <div className="py-20 text-center text-gray-400">불러오는 중...</div>
+                <LoadingBlock />
             ) : filtered.length === 0 ? (
-                <div className="py-20 text-center text-gray-400">
-                    {rooms.length === 0
-                        ? '아직 진행 중인 채팅이 없습니다.'
-                        : '검색 결과가 없습니다.'}
-                </div>
+                <EmptyState
+                    icon="💬"
+                    title={rooms.length === 0 ? '아직 진행 중인 채팅이 없어요' : '검색 결과가 없어요'}
+                    description={
+                        rooms.length === 0
+                            ? '관심 있는 상품에서 "판매자와 채팅하기"를 눌러 대화를 시작해 보세요.'
+                            : '다른 키워드로 검색해 보세요.'
+                    }
+                />
             ) : (
-                <ul className="divide-y border rounded-xl overflow-hidden bg-white">
+                <ul className="divide-y border rounded-2xl overflow-hidden bg-white">
                     {filtered.map((room) => {
                         const img = resolveImage(room.productImageUrl);
                         return (

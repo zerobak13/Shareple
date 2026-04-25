@@ -1,8 +1,45 @@
-import React, { useState } from 'react';
+// src/components/ProductForm.jsx
+// 물품 등록 폼. Tailwind 공용 클래스(.input-base / .btn-primary) 사용.
+import React, { useEffect, useMemo, useState } from 'react';
 import axios from '../api/axiosInstance';
 import { useNavigate } from 'react-router-dom';
 
+const CATEGORIES = ['전자기기', '생활용품', '여행용품', '게임', '서적', '의류', '악세서리'];
+const METHODS = ['직거래', '택배'];
+const DISTRICTS = [
+    '강남구', '강동구', '강북구', '강서구', '관악구', '광진구', '구로구', '금천구',
+    '노원구', '도봉구', '동대문구', '동작구', '마포구', '서대문구', '서초구',
+    '성동구', '성북구', '송파구', '양천구', '영등포구', '용산구', '은평구',
+    '종로구', '중구', '중랑구',
+];
+
+const MAX_AMOUNT = 3_000_000;
+
+const formatCurrency = (value) => {
+    const num = String(value).replace(/[^0-9]/g, '');
+    const limited = Math.min(Number(num || 0), MAX_AMOUNT);
+    return limited ? limited.toLocaleString() : '';
+};
+const parseCurrency = (value) => String(value).replaceAll(',', '');
+
+const numberToKorean = (num) => {
+    if (!num || Number.isNaN(num)) return '';
+    const units = ['', '만', '억', '조'];
+    const split = 10000;
+    const parts = [];
+    let i = 0;
+    let n = num;
+    while (n > 0) {
+        const chunk = n % split;
+        if (chunk) parts.unshift(chunk.toLocaleString() + units[i]);
+        n = Math.floor(n / split);
+        i++;
+    }
+    return parts.length ? parts.join(' ') + ' 원' : '';
+};
+
 const ProductForm = () => {
+    const navigate = useNavigate();
     const [form, setForm] = useState({
         name: '',
         price: '',
@@ -12,212 +49,244 @@ const ProductForm = () => {
         deadline: '',
         method: '',
         location: '',
-        
     });
-
-
-    const [image, setImage] = useState(null);
-    const navigate = useNavigate();
-
     const [formattedPrice, setFormattedPrice] = useState('');
     const [formattedDeposit, setFormattedDeposit] = useState('');
+    const [image, setImage] = useState(null);
+    const [preview, setPreview] = useState(null);
+    const [submitting, setSubmitting] = useState(false);
 
+    useEffect(() => {
+        if (!image) {
+            setPreview(null);
+            return;
+        }
+        const url = URL.createObjectURL(image);
+        setPreview(url);
+        return () => URL.revokeObjectURL(url);
+    }, [image]);
 
-    const handleChange = e => {
-        setForm({ ...form, [e.target.name]: e.target.value });
-    };
-
-    const handleFileChange = e => {
-        setImage(e.target.files[0]);
-    };
-
-
-    const formatCurrency = (value) => {
-    const num = value.replace(/[^0-9]/g, ''); // 숫자만 허용
-    const limited = Math.min(Number(num), 3000000); // 300만 원 제한
-    return limited.toLocaleString(); // 쉼표 자동 추가  
-    };
-
-    const parseCurrency = (value) => {
-        return value.replaceAll(',', ''); // 백엔드에 보낼 때 ',' 제거
-    };
+    const handleChange = (e) =>
+        setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
 
     const handlePriceChange = (e) => {
-        const formatted = formatCurrency(e.target.value);
-        setForm({ ...form, price: parseCurrency(formatted) }); // form에는 숫자만 저장
-        setFormattedPrice(formatted); // 화면에는 쉼표 있는 값 보여줌
+        const f = formatCurrency(e.target.value);
+        setFormattedPrice(f);
+        setForm((prev) => ({ ...prev, price: parseCurrency(f) }));
     };
-
     const handleDepositChange = (e) => {
-        const formatted = formatCurrency(e.target.value);
-        setForm({ ...form, deposit: parseCurrency(formatted) });
-        setFormattedDeposit(formatted);
+        const f = formatCurrency(e.target.value);
+        setFormattedDeposit(f);
+        setForm((prev) => ({ ...prev, deposit: parseCurrency(f) }));
     };
 
+    const canSubmit = useMemo(() => {
+        return (
+            form.name.trim().length > 0 &&
+            form.price &&
+            form.category &&
+            form.method &&
+            form.location &&
+            !submitting
+        );
+    }, [form, submitting]);
 
-
-        const handleSubmit = async e => {
-            e.preventDefault();
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        if (!canSubmit) return;
+        setSubmitting(true);
+        try {
             const data = new FormData();
-            Object.entries(form).forEach(([key, value]) => data.append(key, value));
+            Object.entries(form).forEach(([k, v]) => data.append(k, v));
             if (image) data.append('image', image);
-
-            try {
-                await axios.post('/api/products', data, {
-                    headers: { 'Content-Type': 'multipart/form-data' },
-                });
-                alert('등록 성공!');
-                navigate('/main');
-            } catch (err) {
-                alert('등록 실패');
-            }
-    };
-
-
-    const numberToKorean = (num) => {
-        if (!num || isNaN(num)) return '';
-        const units = ['', '만', '억', '조'];
-        const splitUnit = 10000;
-        const resultArray = [];
-
-        let result = '';
-        let i = 0;
-        while (num > 0) {
-            const chunk = num % splitUnit;
-            if (chunk) {
-            resultArray.unshift(chunk.toLocaleString() + units[i]);
-            }
-            num = Math.floor(num / splitUnit);
-            i++;
+            await axios.post('/api/products', data, {
+                headers: { 'Content-Type': 'multipart/form-data' },
+            });
+            alert('물품이 등록되었어요!');
+            navigate('/mypage/products');
+        } catch (err) {
+            console.error(err);
+            alert('등록 실패: ' + (err?.response?.data?.error || err.message));
+        } finally {
+            setSubmitting(false);
         }
-
-        result = resultArray.join(' ') + ' 원';
-        return result;
     };
-
 
     return (
-        <div className="max-w-2xl mx-auto p-8 bg-white shadow-md rounded-xl mt-8">
-            <h2 className="text-2xl font-bold mb-6 text-[#00C7BE]">📋 물품 등록</h2>
-            <form onSubmit={handleSubmit} className="space-y-4">
-                <input
-                    name="name"
-                    placeholder="물품 이름"
-                    onChange={handleChange}
-                    className="w-full border rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-[#00C7BE]"
-                />
-                <div className="flex gap-4">
-                    <div className="w-full relative">
-                        <input
-                        name="price"
-                        placeholder="가격(1일 기준)"
-                        value={formattedPrice}
-                        onChange={handlePriceChange}
-                        className="w-full border rounded-lg p-3 pr-24 focus:ring-[#00C7BE]"
-                        />
-                        {formattedPrice && (
-                        <span className="absolute top-1/2 right-3 transform -translate-y-1/2 text-sm text-gray-500">
-                            {numberToKorean(Number(form.price))}
-                        </span>
+        <form onSubmit={handleSubmit} className="card p-6 space-y-5">
+            {/* 이미지 */}
+            <div>
+                <label className="block text-xs text-gray-500 mb-1">대표 이미지</label>
+                <div className="flex items-start gap-4">
+                    <div className="w-28 h-28 rounded-xl bg-gray-100 overflow-hidden grid place-items-center shrink-0">
+                        {preview ? (
+                            <img src={preview} alt="preview" className="w-full h-full object-cover" />
+                        ) : (
+                            <span className="text-3xl text-gray-300">🖼️</span>
                         )}
                     </div>
-
-                    <div className="w-full relative">
-                        <input
-                        name="deposit"
-                        placeholder="보증금"
-                        value={formattedDeposit}
-                        onChange={handleDepositChange}
-                        className="w-full border rounded-lg p-3 pr-24 focus:ring-[#00C7BE]"
-                        />
-                        {formattedDeposit && (
-                        <span className="absolute top-1/2 right-3 transform -translate-y-1/2 text-sm text-gray-500">
-                            {numberToKorean(Number(form.deposit))}
-                        </span>
-                        )}
+                    <div>
+                        <label className="btn-secondary cursor-pointer !h-9 !text-xs">
+                            이미지 선택
+                            <input
+                                type="file"
+                                accept="image/*"
+                                className="hidden"
+                                onChange={(e) => setImage(e.target.files?.[0] || null)}
+                            />
+                        </label>
+                        <div className="text-xs text-gray-400 mt-2">
+                            JPG · PNG · 최대 5MB 권장
+                        </div>
                     </div>
                 </div>
+            </div>
 
+            {/* 이름 */}
+            <div>
+                <label className="block text-xs text-gray-500 mb-1">
+                    물품명 <span className="text-red-500">*</span>
+                </label>
+                <input
+                    name="name"
+                    value={form.name}
+                    onChange={handleChange}
+                    placeholder="예) 캠핑용 4인 텐트"
+                    className="input-base"
+                />
+            </div>
+
+            {/* 가격/보증금 */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                    <label className="block text-xs text-gray-500 mb-1">
+                        1일 대여 가격 <span className="text-red-500">*</span>
+                    </label>
+                    <div className="relative">
+                        <input
+                            name="price"
+                            value={formattedPrice}
+                            onChange={handlePriceChange}
+                            placeholder="0"
+                            className="input-base pr-28"
+                            inputMode="numeric"
+                        />
+                        <span className="absolute top-1/2 right-3 -translate-y-1/2 text-xs text-gray-400">
+                            {formattedPrice ? numberToKorean(Number(form.price)) : '원'}
+                        </span>
+                    </div>
+                </div>
+                <div>
+                    <label className="block text-xs text-gray-500 mb-1">보증금</label>
+                    <div className="relative">
+                        <input
+                            name="deposit"
+                            value={formattedDeposit}
+                            onChange={handleDepositChange}
+                            placeholder="0"
+                            className="input-base pr-28"
+                            inputMode="numeric"
+                        />
+                        <span className="absolute top-1/2 right-3 -translate-y-1/2 text-xs text-gray-400">
+                            {formattedDeposit ? numberToKorean(Number(form.deposit)) : '원'}
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            {/* 카테고리/대여 방식 */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                    <label className="block text-xs text-gray-500 mb-1">
+                        카테고리 <span className="text-red-500">*</span>
+                    </label>
+                    <select
+                        name="category"
+                        value={form.category}
+                        onChange={handleChange}
+                        className="input-base"
+                    >
+                        <option value="">선택해 주세요</option>
+                        {CATEGORIES.map((c) => (
+                            <option key={c} value={c}>
+                                {c}
+                            </option>
+                        ))}
+                    </select>
+                </div>
+                <div>
+                    <label className="block text-xs text-gray-500 mb-1">
+                        대여 방식 <span className="text-red-500">*</span>
+                    </label>
+                    <select
+                        name="method"
+                        value={form.method}
+                        onChange={handleChange}
+                        className="input-base"
+                    >
+                        <option value="">선택해 주세요</option>
+                        {METHODS.map((m) => (
+                            <option key={m} value={m}>
+                                {m}
+                            </option>
+                        ))}
+                    </select>
+                </div>
+            </div>
+
+            {/* 마감일/지역 */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                    <label className="block text-xs text-gray-500 mb-1">대여 가능 마감일</label>
+                    <input
+                        type="date"
+                        name="deadline"
+                        value={form.deadline}
+                        onChange={handleChange}
+                        className="input-base"
+                    />
+                </div>
+                <div>
+                    <label className="block text-xs text-gray-500 mb-1">
+                        거래 지역 <span className="text-red-500">*</span>
+                    </label>
+                    <select
+                        name="location"
+                        value={form.location}
+                        onChange={handleChange}
+                        className="input-base"
+                    >
+                        <option value="">선택해 주세요</option>
+                        {DISTRICTS.map((d) => (
+                            <option key={d} value={d}>
+                                {d}
+                            </option>
+                        ))}
+                    </select>
+                </div>
+            </div>
+
+            {/* 설명 */}
+            <div>
+                <label className="block text-xs text-gray-500 mb-1">상세 설명</label>
                 <textarea
                     name="description"
-                    placeholder="상세 설명"
+                    value={form.description}
                     onChange={handleChange}
-                    rows={4}
-                    className="w-full border rounded-lg p-3 resize-none focus:ring-[#00C7BE]"
+                    rows={5}
+                    placeholder="물품의 상태, 구성품, 사용 방법 등을 자세히 적어주세요."
+                    className="input-base resize-none !h-auto py-3"
                 />
-                <select
-                    name="category"
-                    onChange={handleChange}
-                    className="w-full border rounded-lg p-3 text-gray-700 focus:ring-[#00C7BE]"
-                >
-                    <option value="">카테고리 선택</option>
-                    <option value="게임">게임</option>
-                    <option value="서적">서적</option>
-                    <option value="의류">의류</option>
-                    <option value="악세서리">악세서리</option>
-                    <option value="전자기기">전자기기</option>
-                    <option value="여행용품">여행용품</option>
-                    <option value="생활용품">생활용품</option>
-                </select>
-                <input
-                    type="date"
-                    name="deadline"
-                    onChange={handleChange}
-                    className="w-full border rounded-lg p-3 text-gray-700 focus:ring-[#00C7BE]"
-                />
-                <select
-                    name="method"
-                    onChange={handleChange}
-                    className="w-full border rounded-lg p-3 text-gray-700 focus:ring-[#00C7BE]"
-                >
-                    <option value="">대여 방식 선택</option>
-                    <option value="직거래">직거래</option>
-                    <option value="택배">택배</option>
-                </select>
+            </div>
 
-            <select name="location" onChange={handleChange}>
-                <option value="">직거래 장소</option>
-                <option value="강남구">강남구</option>
-                <option value="강동구">강동구</option>
-                <option value="강북구">강북구</option>
-                <option value="강서구">강서구</option>
-                <option value="관악구">관악구</option>
-                <option value="광진구">광진구</option>
-                <option value="구로구">구로구</option>
-                <option value="금천구">금천구</option>
-                <option value="노원구">노원구</option>
-                <option value="도봉구">도봉구</option>
-                <option value="동대문구">동대문구</option>
-                <option value="동작구">동작구</option>
-                <option value="마포구">마포구</option>
-                <option value="서대문구">서대문구</option>
-                <option value="서초구">서초구</option>
-                <option value="성동구">성동구</option>
-                <option value="성북구">성북구</option>
-                <option value="송파구">송파구</option>
-                <option value="양천구">양천구</option>
-                <option value="영등포구">영등포구</option>
-                <option value="용산구">용산구</option>
-                <option value="은평구">은평구</option>
-                <option value="종로구">종로구</option>
-                <option value="중구">중구</option>
-                <option value="중랑구">중랑구</option>
-            </select>
-                <input
-                    type="file"
-                    accept="image/*"
-                    onChange={handleFileChange}
-                    className="w-full border rounded-lg p-3 bg-gray-50"
-                />
-                <button
-                    type="submit"
-                    className="w-full bg-[#AF52DE] text-white py-3 rounded-lg font-semibold hover:bg-[#9a42c9] transition"
-                >
-                    물품 등록
-                </button>
-            </form>
-        </div>
-
+            <button
+                type="submit"
+                disabled={!canSubmit}
+                className="btn-primary w-full !py-3"
+            >
+                {submitting ? '등록 중...' : '물품 등록하기'}
+            </button>
+        </form>
     );
 };
 

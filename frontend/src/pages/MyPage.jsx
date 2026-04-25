@@ -17,9 +17,12 @@ const menu = [
 
 const MyPage = () => {
     return (
-        <div className="max-w-6xl mx-auto px-4 py-6 grid grid-cols-1 md:grid-cols-[220px_1fr] gap-6">
-            <aside className="bg-white border rounded-2xl p-3 h-fit md:sticky md:top-6">
-                <h2 className="text-lg font-bold px-3 py-2 mb-2">마이페이지</h2>
+        <div className="max-w-6xl mx-auto px-4 py-6 grid grid-cols-1 md:grid-cols-[240px_1fr] gap-6">
+            <aside className="card p-3 h-fit md:sticky md:top-20">
+                <div className="px-3 py-2 mb-2">
+                    <h2 className="text-lg font-extrabold">마이페이지</h2>
+                    <p className="text-xs text-gray-400 mt-0.5">내 활동과 설정을 관리해요</p>
+                </div>
                 <nav className="flex flex-col gap-1">
                     {menu.map((m) => (
                         <NavLink
@@ -29,7 +32,7 @@ const MyPage = () => {
                             className={({ isActive }) =>
                                 `flex items-center gap-2 px-3 py-2 rounded-xl text-sm transition ${
                                     isActive
-                                        ? 'bg-blue-50 text-blue-700 font-semibold'
+                                        ? 'bg-primary/10 text-primary font-semibold'
                                         : 'text-gray-700 hover:bg-gray-100'
                                 }`
                             }
@@ -41,7 +44,7 @@ const MyPage = () => {
                 </nav>
             </aside>
 
-            <section className="bg-white border rounded-2xl p-6 min-h-[400px]">
+            <section className="card p-6 min-h-[400px]">
                 <Outlet />
             </section>
         </div>

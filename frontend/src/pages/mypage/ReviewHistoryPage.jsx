@@ -5,6 +5,8 @@
 import React, { useEffect, useState } from 'react';
 import axios from '../../api/axiosInstance';
 import StarRating from '../../components/StarRating';
+import EmptyState from '../../components/EmptyState';
+import { LoadingBlock } from '../../components/Spinner';
 
 const resolveImage = (url) => {
     if (!url) return null;
@@ -122,13 +124,21 @@ const ReviewHistoryPage = () => {
             </div>
 
             {loading ? (
-                <div className="py-20 text-center text-gray-400">불러오는 중...</div>
+                <LoadingBlock />
             ) : items.length === 0 ? (
-                <div className="border-2 border-dashed border-gray-200 rounded-xl p-8 text-center text-gray-400">
-                    {tab === 'written'
-                        ? '아직 작성한 리뷰가 없습니다. 반납이 완료된 거래에서 리뷰를 남길 수 있어요.'
-                        : '아직 받은 리뷰가 없습니다.'}
-                </div>
+                <EmptyState
+                    icon="⭐"
+                    title={
+                        tab === 'written'
+                            ? '아직 작성한 리뷰가 없어요'
+                            : '아직 받은 리뷰가 없어요'
+                    }
+                    description={
+                        tab === 'written'
+                            ? '반납이 완료된 거래에서 리뷰를 남길 수 있어요.'
+                            : '거래 상대가 리뷰를 남기면 이곳에 표시돼요.'
+                    }
+                />
             ) : (
                 <div className="space-y-3">
                     {items.map((r) => (
