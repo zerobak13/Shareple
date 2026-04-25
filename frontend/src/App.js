@@ -36,6 +36,8 @@ import SettingsPage from './pages/mypage/SettingsPage';
 import AdminInquiriesPage from './pages/admin/AdminInquiriesPage';
 
 import Navbar from './components/Navbar';
+import Footer from './components/Footer';
+import { Spinner } from './components/Spinner';
 
 function App() {
     const [user, setUser] = useState(null);
@@ -52,13 +54,20 @@ function App() {
     }, []);
 
     if (loading) {
-        return <div style={{ textAlign: 'center', marginTop: '3rem' }}>로딩 중...</div>;
+        return (
+            <div className="min-h-screen flex flex-col items-center justify-center gap-3 text-gray-500">
+                <Spinner size="lg" />
+                <span className="text-sm">Shareple 준비 중...</span>
+            </div>
+        );
     }
 
     return (
         <BrowserRouter>
-            <Navbar /> {/* ✅ 상단 바 */}
-            <Routes>
+            <div className="min-h-screen flex flex-col">
+                <Navbar />
+                <main className="flex-1">
+                    <Routes>
                 {/* 메인 경로 */}
                 <Route
                     path="/"
@@ -143,13 +152,20 @@ function App() {
                 <Route
                     path="*"
                     element={
-                        <div style={{ textAlign: 'center', marginTop: '3rem' }}>
-                            404 Not Found<br />
-                            요청하신 페이지를 찾을 수 없습니다.
+                        <div className="max-w-md mx-auto text-center py-24 px-6">
+                            <div className="text-6xl mb-4">🙈</div>
+                            <h1 className="text-2xl font-extrabold mb-2">페이지를 찾을 수 없어요</h1>
+                            <p className="text-sm text-gray-500 mb-6">
+                                요청하신 주소가 존재하지 않거나 이동되었습니다.
+                            </p>
+                            <a href="/" className="btn-primary inline-flex">홈으로 돌아가기</a>
                         </div>
                     }
                 />
-            </Routes>
+                    </Routes>
+                </main>
+                <Footer />
+            </div>
         </BrowserRouter>
     );
 }

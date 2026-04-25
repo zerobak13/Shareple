@@ -6,6 +6,8 @@ import React, { useCallback, useEffect, useState } from 'react';
 import axios from '../../api/axiosInstance';
 import RentalItemCard from '../../components/RentalItemCard';
 import ReviewWriteModal from '../../components/ReviewWriteModal';
+import EmptyState from '../../components/EmptyState';
+import { LoadingBlock } from '../../components/Spinner';
 
 const ReturnHistoryPage = () => {
     const [items, setItems] = useState([]);
@@ -57,11 +59,13 @@ const ReturnHistoryPage = () => {
             </p>
 
             {loading ? (
-                <div className="py-20 text-center text-gray-400">불러오는 중...</div>
+                <LoadingBlock />
             ) : items.length === 0 ? (
-                <div className="border-2 border-dashed border-gray-200 rounded-xl p-8 text-center text-gray-400">
-                    반납 완료된 거래가 없습니다.
-                </div>
+                <EmptyState
+                    icon="📤"
+                    title="반납 완료된 거래가 없어요"
+                    description={'거래가 완료되면 이곳에서 리뷰를 남길 수 있어요.'}
+                />
             ) : (
                 <div className="space-y-3">
                     {items.map((it) => {

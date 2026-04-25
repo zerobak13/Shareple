@@ -6,6 +6,8 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import axios from '../../api/axiosInstance';
 import RentalItemCard from '../../components/RentalItemCard';
+import EmptyState from '../../components/EmptyState';
+import { LoadingBlock } from '../../components/Spinner';
 
 const TABS = [
     { key: 'ALL', label: '전체', statuses: null },
@@ -72,13 +74,17 @@ const RentalHistoryPage = () => {
             </div>
 
             {loading ? (
-                <div className="py-20 text-center text-gray-400">불러오는 중...</div>
+                <LoadingBlock />
             ) : filtered.length === 0 ? (
-                <div className="border-2 border-dashed border-gray-200 rounded-xl p-8 text-center text-gray-400">
-                    {items.length === 0
-                        ? '아직 대여한 물품이 없습니다.'
-                        : '해당 상태의 거래가 없습니다.'}
-                </div>
+                <EmptyState
+                    icon="📥"
+                    title={items.length === 0 ? '아직 대여한 물품이 없어요' : '해당 상태의 거래가 없어요'}
+                    description={
+                        items.length === 0
+                            ? '관심 있는 상품을 찾아 대여를 시작해 보세요.'
+                            : '다른 탭에서 거래를 확인해 보세요.'
+                    }
+                />
             ) : (
                 <div className="space-y-3">
                     {filtered.map((it) => (

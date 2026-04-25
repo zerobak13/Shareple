@@ -5,6 +5,8 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from '../../api/axiosInstance';
+import EmptyState from '../../components/EmptyState';
+import { LoadingBlock } from '../../components/Spinner';
 
 const formatDateTime = (iso) => {
     if (!iso) return '';
@@ -107,7 +109,7 @@ const InquiryRow = ({ item, onAnswered }) => {
                         </div>
                         <textarea
                             rows={5}
-                            className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                            className="input-base resize-none !h-auto py-3"
                             value={draft}
                             onChange={(e) => setDraft(e.target.value)}
                             placeholder="답변 내용을 입력하세요."
@@ -116,7 +118,7 @@ const InquiryRow = ({ item, onAnswered }) => {
                             <button
                                 onClick={submit}
                                 disabled={submitting}
-                                className="px-4 py-2 rounded-lg bg-primary text-white text-sm hover:opacity-90 disabled:opacity-50"
+                                className="btn-primary !h-9 !text-xs"
                             >
                                 {submitting
                                     ? '등록 중...'
@@ -198,11 +200,16 @@ const AdminInquiriesPage = () => {
     }
 
     return (
-        <div className="max-w-3xl mx-auto p-8">
-            <div className="flex items-center justify-between mb-4">
-                <h2 className="text-2xl font-bold">고객 문의 관리</h2>
+        <div className="max-w-3xl mx-auto p-6 md:p-8">
+            <div className="flex items-end justify-between mb-4">
+                <div>
+                    <h2 className="text-2xl font-extrabold">고객 문의 관리</h2>
+                    <p className="text-xs text-gray-500 mt-1">
+                        미답변 문의를 빠르게 확인하고 답변해 주세요.
+                    </p>
+                </div>
                 <div className="text-sm text-gray-500">
-                    미답변 <span className="text-red-500 font-semibold">{openCount}</span>건
+                    미답변 <span className="text-red-500 font-extrabold">{openCount}</span>건
                 </div>
             </div>
 
@@ -211,10 +218,10 @@ const AdminInquiriesPage = () => {
                     <button
                         key={t.value}
                         onClick={() => setTab(t.value)}
-                        className={`px-4 py-2 text-sm -mb-px border-b-2 ${
+                        className={`px-4 py-2 text-sm -mb-px border-b-2 transition ${
                             tab === t.value
                                 ? 'border-primary text-primary font-semibold'
-                                : 'border-transparent text-gray-500'
+                                : 'border-transparent text-gray-500 hover:text-gray-700'
                         }`}
                     >
                         {t.label}
@@ -223,11 +230,13 @@ const AdminInquiriesPage = () => {
             </div>
 
             {loading ? (
-                <div className="py-20 text-center text-gray-400">불러오는 중...</div>
+                <LoadingBlock />
             ) : items.length === 0 ? (
-                <div className="border-2 border-dashed border-gray-200 rounded-xl p-8 text-center text-gray-400">
-                    해당 상태의 문의가 없습니다.
-                </div>
+                <EmptyState
+                    icon="📬"
+                    title="해당 상태의 문의가 없어요"
+                    description={'다른 탭에서 문의를 확인해 주세요.'}
+                />
             ) : (
                 <ul className="space-y-3">
                     {items.map((it) => (

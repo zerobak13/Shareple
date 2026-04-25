@@ -4,6 +4,8 @@
 //  - GET  /api/inquiries/my (내 문의 내역 + 답변 확인)
 import React, { useEffect, useState } from 'react';
 import axios from '../../api/axiosInstance';
+import EmptyState from '../../components/EmptyState';
+import { LoadingBlock } from '../../components/Spinner';
 
 const formatDate = (iso) => {
     if (!iso) return '';
@@ -82,46 +84,48 @@ const SupportPage = () => {
 
     return (
         <div className="max-w-2xl">
-            <h3 className="text-xl font-bold mb-4">고객지원</h3>
+            <h3 className="text-xl font-extrabold mb-1">고객지원</h3>
+            <p className="text-xs text-gray-500 mb-5">
+                이용 중 문제가 생기면 언제든 문의해 주세요. 답변이 오면 이 페이지에서 확인할 수 있어요.
+            </p>
 
-            <section className="mb-6 p-4 bg-gray-50 rounded-xl">
-                <h4 className="font-semibold mb-2">고객센터</h4>
+            <section className="mb-6 p-4 bg-primary/5 rounded-xl border border-primary/20">
+                <h4 className="font-semibold mb-1">📞 고객센터 안내</h4>
                 <p className="text-sm text-gray-600">
-                    서비스 사용 중 불편함이나 문의가 있으면 아래 폼으로 접수해주세요.
+                    평균 답변 시간은 영업일 기준 1~2일이에요.
                 </p>
-                <p className="text-sm text-gray-600">이메일: support@shareple.example</p>
+                <p className="text-sm text-gray-600">
+                    이메일: <span className="text-primary">support@shareple.example</span>
+                </p>
             </section>
 
-            <form onSubmit={handleSubmit} className="mb-8">
-                <h4 className="font-semibold mb-3">문의하기</h4>
+            <form onSubmit={handleSubmit} className="mb-8 space-y-4">
+                <h4 className="font-semibold">문의하기</h4>
 
-                <label className="block mb-3">
-                    <span className="text-sm text-gray-600">제목</span>
+                <div>
+                    <label className="block text-xs text-gray-500 mb-1">제목</label>
                     <input
-                        className="mt-1 block w-full border rounded-lg px-3 py-2"
+                        className="input-base"
                         maxLength={200}
+                        placeholder="어떤 점이 불편하셨나요?"
                         value={form.title}
                         onChange={(e) => setForm({ ...form, title: e.target.value })}
                         required
                     />
-                </label>
-
-                <label className="block mb-4">
-                    <span className="text-sm text-gray-600">문의 내용</span>
+                </div>
+                <div>
+                    <label className="block text-xs text-gray-500 mb-1">문의 내용</label>
                     <textarea
                         rows={6}
-                        className="mt-1 block w-full border rounded-lg px-3 py-2"
+                        className="input-base resize-none !h-auto py-3"
+                        placeholder="상황을 자세히 적어주시면 더 빠르게 도와드릴 수 있어요."
                         value={form.content}
                         onChange={(e) => setForm({ ...form, content: e.target.value })}
                         required
                     />
-                </label>
+                </div>
 
-                <button
-                    type="submit"
-                    disabled={submitting}
-                    className="px-4 py-2 rounded-lg bg-primary text-white hover:opacity-90 disabled:opacity-50"
-                >
+                <button type="submit" disabled={submitting} className="btn-primary">
                     {submitting ? '접수 중...' : '문의 접수'}
                 </button>
             </form>
@@ -130,11 +134,13 @@ const SupportPage = () => {
                 <h4 className="font-semibold mb-3">내 문의 내역</h4>
 
                 {loading ? (
-                    <div className="py-10 text-center text-gray-400">불러오는 중...</div>
+                    <LoadingBlock />
                 ) : items.length === 0 ? (
-                    <div className="border-2 border-dashed border-gray-200 rounded-xl p-8 text-center text-gray-400">
-                        아직 접수한 문의가 없습니다.
-                    </div>
+                    <EmptyState
+                        icon="💬"
+                        title="아직 접수한 문의가 없어요"
+                        description={'궁금한 점이 있다면 언제든 문의를 남겨주세요.'}
+                    />
                 ) : (
                     <ul className="space-y-3">
                         {items.map((it) => {
